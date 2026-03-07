@@ -1003,6 +1003,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
   Offset _dragOffset = Offset.zero;
   double _scale = 1.0;
   bool _isDragging = false;
+  int _pointerCount = 0; // Đếm số lượng ngón tay trên màn hình
   final TransformationController _transformationController =
       TransformationController();
 
@@ -1025,22 +1026,50 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
           Listener(
             behavior: HitTestBehavior.translucent,
             onPointerDown: (event) {
-              final scale = _transformationController.value.getMaxScaleOnAxis();
-              if (scale <= 1.0) {
-                _isDragging = true;
-              }
+              setState(() {
+                _pointerCount++;
+              });
             },
             onPointerMove: (event) {
-              if (_isDragging) {
-                setState(() {
-                  _dragOffset += event.delta;
-                  final double distance = _dragOffset.distance;
-                  _scale = (1.0 - (distance / 1500)).clamp(0.6, 1.0);
-                });
+              final scale = _transformationController.value.getMaxScaleOnAxis();
+
+              // Chỉ cho phép kéo thoát nếu:
+              // 1. Chỉ có 1 ngón tay chạm
+              // 2. Không đang phóng to (scale <= 1.0)
+              if (_pointerCount == 1 && scale <= 1.0) {
+                if (!_isDragging) {
+                  // Nếu chưa bắt đầu kéo, kiểm tra xem đã di chuyển đủ xa chưa (threshold)
+                  if (event.localDelta.distance > 2) {
+                    setState(() {
+                      _isDragging = true;
+                    });
+                  }
+                }
+
+                if (_isDragging) {
+                  setState(() {
+                    _dragOffset += event.delta;
+                    final double distance = _dragOffset.distance;
+                    _scale = (1.0 - (distance / 1500)).clamp(0.6, 1.0);
+                  });
+                }
+              } else if (_pointerCount > 1) {
+                // Nếu có nhiều hơn 1 ngón tay, hủy trạng thái kéo thoát ngay lập tức
+                if (_isDragging) {
+                  setState(() {
+                    _isDragging = false;
+                    _dragOffset = Offset.zero;
+                    _scale = 1.0;
+                  });
+                }
               }
             },
             onPointerUp: (event) {
-              if (_isDragging) {
+              setState(() {
+                _pointerCount--;
+              });
+
+              if (_pointerCount == 0 && _isDragging) {
                 if (_dragOffset.distance > 100) {
                   Navigator.of(context).pop();
                 } else {
@@ -1051,6 +1080,14 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
                   });
                 }
               }
+            },
+            onPointerCancel: (event) {
+              setState(() {
+                _pointerCount = 0;
+                _isDragging = false;
+                _dragOffset = Offset.zero;
+                _scale = 1.0;
+              });
             },
             child: Transform.translate(
               offset: _dragOffset,
