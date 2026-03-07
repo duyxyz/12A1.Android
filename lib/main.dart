@@ -442,17 +442,18 @@ class AddTab extends StatefulWidget {
 
 class _AddTabState extends State<AddTab> {
   bool _isUploading = false;
+  String _uploadStatus = "";
   final ImagePicker _picker = ImagePicker();
-  XFile? _previewImage; // Biến lưu tạm ảnh để xem trước
+  List<XFile> _selectedImages = []; // Danh sách ảnh đã chọn
 
-  // 1. Chỉ chọn ảnh và show ra UI
+  // 1. Chọn nhiều ảnh và thêm vào danh sách
   Future<void> _pickImage() async {
     HapticFeedback.lightImpact();
     try {
-      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-      if (image != null) {
+      final List<XFile> images = await _picker.pickMultiImage();
+      if (images.isNotEmpty) {
         setState(() {
-          _previewImage = image;
+          _selectedImages.addAll(images);
         });
       }
     } catch (e) {
@@ -464,17 +465,19 @@ class _AddTabState extends State<AddTab> {
     }
   }
 
-  // 2. Nén và tải ảnh lên Github
+  // 2. Nén và tải từng ảnh lên Github
   Future<void> _uploadImage() async {
     HapticFeedback.lightImpact();
-    if (_previewImage == null) return;
-    
+    if (_selectedImages.isEmpty) return;
+
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Xác nhận Đăng Ảnh'),
-          content: const Text('Bạn có chắc chắn muốn đăng bức ảnh này lên Bộ Sưu Tập chung không?'),
+          content: Text(
+            'Bạn có chắc chắn muốn đăng ${_selectedImages.length} bức ảnh này lên Bộ Sưu Tập chung không?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -488,56 +491,64 @@ class _AddTabState extends State<AddTab> {
         );
       },
     );
-    
+
     if (confirm != true) return;
 
-    setState(() => _isUploading = true);
+    setState(() {
+      _isUploading = true;
+      _uploadStatus = "Bắt đầu tải lên...";
+    });
 
     try {
-      // Nén & chuyển sang webp
-      final Uint8List? compressedBytes =
-          await FlutterImageCompress.compressWithFile(
-            _previewImage!.path,
-            minWidth: 1920,
-            minHeight: 1920,
-            quality: 80,
-            format: CompressFormat.webp,
-          );
+      // Sao chép danh sách ảnh cũ để tính index chính xác
+      List<Map<String, dynamic>> currentImages = List.from(widget.images);
 
-      if (compressedBytes == null) {
-        throw Exception("Compression failed");
-      }
+      for (int i = 0; i < _selectedImages.length; i++) {
+        final image = _selectedImages[i];
+        setState(() {
+          _uploadStatus = "Đang xử lý ${i + 1}/${_selectedImages.length}...";
+        });
 
-      // Tính tên file (tìm số trống nhỏ nhất, bắt đầu từ 1)
-      int nextIndex = 1;
-      if (widget.images.isNotEmpty) {
-        // Lấy tất cả các index hiện có và sắp xếp tăng dần
-        List<int> existingIndexes = widget.images
+        // Nén & chuyển sang webp
+        final Uint8List? compressedBytes =
+            await FlutterImageCompress.compressWithFile(
+              image.path,
+              minWidth: 1920,
+              minHeight: 1920,
+              quality: 80,
+              format: CompressFormat.webp,
+            );
+
+        if (compressedBytes == null) continue;
+
+        // Tính tên file (tìm số trống nhỏ nhất)
+        int nextIndex = 1;
+        List<int> existingIndexes = currentImages
             .map<int>((img) => img['index'] as int)
             .toList()
           ..sort();
 
-        // Tìm số nhỏ nhất bị thiếu (missing number)
-        for (int i = 0; i < existingIndexes.length; i++) {
-          if (existingIndexes[i] == nextIndex) {
-            nextIndex++; // Số này đã có, tăng lên 1 để kiểm tra số tiếp theo
-          } else if (existingIndexes[i] > nextIndex) {
-            break; // Đã tìm thấy khoảng trống
+        for (int idx = 0; idx < existingIndexes.length; idx++) {
+          if (existingIndexes[idx] == nextIndex) {
+            nextIndex++;
+          } else if (existingIndexes[idx] > nextIndex) {
+            break;
           }
         }
+
+        final filename = '$nextIndex.webp';
+        await GithubService.uploadImage(filename, compressedBytes);
+
+        // Giả lập cập nhật danh sách local để ảnh tiếp theo không trùng index
+        currentImages.add({'index': nextIndex});
       }
-
-      final filename = '$nextIndex.webp';
-
-      await GithubService.uploadImage(filename, compressedBytes);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tải ảnh lên thành công!')),
+          const SnackBar(content: Text('Đã tải tất cả ảnh lên thành công!')),
         );
-        // Thành công thì xóa preview đi để về màn hình pick ảnh ban đầu
         setState(() {
-          _previewImage = null;
+          _selectedImages.clear();
         });
       }
       await widget.onRefresh();
@@ -552,90 +563,147 @@ class _AddTabState extends State<AddTab> {
     }
   }
 
-  void _cancelPreview() {
+  void _removeImage(int index) {
+    HapticFeedback.lightImpact();
     setState(() {
-      _previewImage = null;
+      _selectedImages.removeAt(index);
     });
   }
 
+  void _clearSelection() {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _selectedImages.clear();
+    });
+  }
+
+
+
   @override
   Widget build(BuildContext context) {
-    if (_isUploading) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text("Đang xử lý và tải lên Github..."),
-          ],
-        ),
-      );
-    }
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: _previewImage != null
-            ? Column(
+    return Scaffold(
+      appBar: _selectedImages.isNotEmpty && !_isUploading
+          ? AppBar(
+              title: Text('Đã chọn ${_selectedImages.length} ảnh'),
+              actions: [
+                IconButton(
+                  onPressed: _clearSelection,
+                  icon: const Icon(Icons.delete_sweep_outlined),
+                  tooltip: 'Xóa hết',
+                ),
+              ],
+            )
+          : null,
+      body: _isUploading
+          ? Center(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.file(
-                        File(_previewImage!.path),
-                        fit: BoxFit.contain,
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(_uploadStatus),
+                ],
+              ),
+            )
+          : _selectedImages.isNotEmpty
+              ? Column(
+                  children: [
+                    Expanded(
+                      child: GridView.builder(
+                        padding: const EdgeInsets.all(8),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
+                            ),
+                        itemCount: _selectedImages.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == _selectedImages.length) {
+                            return InkWell(
+                              onTap: _pickImage,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .outlineVariant,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.add_a_photo_outlined),
+                              ),
+                            );
+                          }
+                          return Stack(
+                            children: [
+                              Positioned.fill(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.file(
+                                    File(_selectedImages[index].path),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 4,
+                                right: 4,
+                                child: GestureDetector(
+                                  onTap: () => _removeImage(index),
+                                  child: Container(
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black54,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.close,
+                                      size: 18,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _cancelPreview,
-                          icon: const Icon(Icons.close),
-                          label: const Text('Hủy'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: SizedBox(
+                        width: double.infinity,
                         child: FilledButton.icon(
                           onPressed: _uploadImage,
                           icon: const Icon(Icons.cloud_upload),
-                          label: const Text('Đăng ảnh'),
+                          label: const Text('Đăng tất cả ảnh'),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
                         ),
                       ),
+                    ),
+                  ],
+                )
+              : Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.add_photo_alternate_outlined, size: 80),
+                      const SizedBox(height: 32),
+                      FilledButton(
+                        onPressed: _pickImage,
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                        ),
+                        child: const Text('Chọn ảnh từ thiết bị'),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                ],
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.add_photo_alternate_outlined, size: 80),
-                  const SizedBox(height: 32),
-                  FilledButton(
-                    onPressed: _pickImage,
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 16,
-                      ),
-                    ),
-                    child: const Text('Chọn ảnh từ thiết bị'),
-                  ),
-                ],
-              ),
-      ),
+                ),
     );
   }
 }
