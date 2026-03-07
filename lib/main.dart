@@ -7,8 +7,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:http/http.dart' as http;
+import 'package:shimmer/shimmer.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -131,29 +133,39 @@ class MyApp extends StatelessWidget {
   static final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(
     ThemeMode.system,
   );
+  
+  // Trình lắng nghe chọn màu chủ đạo
+  static final ValueNotifier<Color> themeColorNotifier = ValueNotifier(
+    Colors.blueAccent,
+  );
 
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (context, currentMode, _) {
-        return MaterialApp(
-          title: '12A1 THPT Đơn Dương',
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
-            useMaterial3: true,
-          ),
-          darkTheme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.blueAccent,
-              brightness: Brightness.dark,
-            ),
-            useMaterial3: true,
-          ),
-          themeMode: currentMode,
-          themeAnimationDuration: const Duration(milliseconds: 500),
-          themeAnimationCurve: Curves.easeInOut,
-          home: const MainScreen(),
+        return ValueListenableBuilder<Color>(
+          valueListenable: themeColorNotifier,
+          builder: (context, currentColor, _) {
+            return MaterialApp(
+              title: '12A1 THPT Đơn Dương',
+              theme: ThemeData(
+                colorScheme: ColorScheme.fromSeed(seedColor: currentColor),
+                useMaterial3: true,
+              ),
+              darkTheme: ThemeData(
+                colorScheme: ColorScheme.fromSeed(
+                  seedColor: currentColor,
+                  brightness: Brightness.dark,
+                ),
+                useMaterial3: true,
+              ),
+              themeMode: currentMode,
+              themeAnimationDuration: const Duration(milliseconds: 500),
+              themeAnimationCurve: Curves.easeInOut,
+              home: const MainScreen(),
+            );
+          },
         );
       },
     );
@@ -389,8 +401,19 @@ class _ImageGridItemState extends State<_ImageGridItem>
                       fit: BoxFit.contain,
                       width: double.infinity,
                       height: double.infinity,
-                      placeholder: (context, url) => const Center(
-                        child: CircularProgressIndicator(color: Colors.white),
+                      placeholder: (context, url) => Center(
+                        child: Shimmer.fromColors(
+                          baseColor: Colors.grey.withValues(alpha: 0.3),
+                          highlightColor: Colors.grey.withValues(alpha: 0.1),
+                          child: Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
                       ),
                       errorWidget: (context, url, error) =>
                           const Icon(Icons.error, color: Colors.white),
@@ -421,9 +444,12 @@ class _ImageGridItemState extends State<_ImageGridItem>
             // fadeInDuration tắt đi để không bị hiệu ứng chếp hình/mờ lại mỗi lần lướt hoặc quay lại
             fadeInDuration: Duration.zero,
             fadeOutDuration: Duration.zero,
-            placeholder: (context, url) => Container(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: const Center(child: CircularProgressIndicator()),
+            placeholder: (context, url) => Shimmer.fromColors(
+              baseColor: Colors.grey.withValues(alpha: 0.3),
+              highlightColor: Colors.grey.withValues(alpha: 0.1),
+              child: Container(
+                color: Colors.white,
+              ),
             ),
             errorWidget: (context, url, error) => const Icon(Icons.error),
           ),
@@ -672,8 +698,11 @@ class _DeleteTabState extends State<DeleteTab> {
                       child: CachedNetworkImage(
                         imageUrl: img['download_url'],
                         fit: BoxFit.cover,
-                        placeholder: (context, url) =>
-                            Container(color: Colors.grey[300]),
+                        placeholder: (context, url) => Shimmer.fromColors(
+                          baseColor: Colors.grey.withValues(alpha: 0.3),
+                          highlightColor: Colors.grey.withValues(alpha: 0.1),
+                          child: Container(color: Colors.white),
+                        ),
                       ),
                     ),
                     if (isSelected)
@@ -730,13 +759,31 @@ class _DeleteTabState extends State<DeleteTab> {
 // ----------------------------------------------------------------------
 // 4. TRANG SETTINGS (Cài đặt & Lịch sử)
 // ----------------------------------------------------------------------
-class SettingsTab extends StatelessWidget {
+class SettingsTab extends StatefulWidget {
   const SettingsTab({super.key});
+
+  @override
+  State<SettingsTab> createState() => _SettingsTabState();
+}
+
+class _SettingsTabState extends State<SettingsTab> {
+  @override
+  void initState() {
+    super.initState();
+    // Mỗi khi vào tab Settings, ép cập nhật lại số Hz thật
+    _updateHz();
+  }
+
+  Future<void> _updateHz() async {
+    // Không làm gì cả vì đã xóa chức năng liên quan tần số quét.
+  }
 
   @override
   Widget build(BuildContext context) {
     return ListView(
+      physics: const ClampingScrollPhysics(), // Tắt hiệu ứng kéo giãn cao su
       children: [
+        const Divider(),
         ValueListenableBuilder<String>(
           valueListenable: GithubService.apiRemaining,
           builder: (context, remaining, _) {
@@ -786,6 +833,69 @@ class SettingsTab extends StatelessWidget {
             );
           },
         ),
+        const Divider(),
+        const Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text(
+            'Màu chủ đạo',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        ValueListenableBuilder<Color>(
+          valueListenable: MyApp.themeColorNotifier,
+          builder: (context, currentColor, _) {
+            final List<Color> colors = [
+              Colors.blueAccent,
+              Colors.redAccent,
+              Colors.green,
+              Colors.orange,
+              Colors.purple,
+              Colors.pink,
+              Colors.teal,
+              Colors.amber,
+              Colors.brown,
+            ];
+
+            return SizedBox(
+              height: 60,
+              child: ListView.separated(
+                physics: const BouncingScrollPhysics(),
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: colors.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 12),
+                itemBuilder: (context, index) {
+                  final color = colors[index];
+                  final isSelected = currentColor == color;
+                  
+                  return GestureDetector(
+                    onTap: () {
+                      MyApp.themeColorNotifier.value = color;
+                    },
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: isSelected
+                            ? Border.all(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                width: 3,
+                              )
+                            : null,
+                      ),
+                      child: isSelected
+                          ? const Icon(Icons.check, color: Colors.white)
+                          : null,
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 24),
       ],
     );
   }
