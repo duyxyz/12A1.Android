@@ -1101,12 +1101,12 @@ class FullScreenImageViewer extends StatefulWidget {
 }
 
 class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
+  final TransformationController _transformationController =
+      TransformationController();
   Offset _dragOffset = Offset.zero;
   double _scale = 1.0;
   bool _isDragging = false;
   int _pointerCount = 0; // Đếm số lượng ngón tay trên màn hình
-  final TransformationController _transformationController =
-      TransformationController();
 
   @override
   void dispose() {
