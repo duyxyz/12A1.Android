@@ -741,31 +741,9 @@ class SettingsTab extends StatelessWidget {
           valueListenable: GithubService.apiRemaining,
           builder: (context, remaining, _) {
             return ListTile(
-              title: const Text('GitHub Token Rate Limit'),
-              subtitle: Text(
-                'Còn lại: $remaining / 5000 request',
+              title: Text(
+                '$remaining / 5000',
                 style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              trailing: IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () {
-                  // Gọi API nhanh để lấy rate limit mới nhất (fetch nhánh main)
-                  http
-                      .get(
-                        Uri.parse(
-                          'https://api.github.com/repos/${GithubService.owner}/${GithubService.repo}',
-                        ),
-                        headers: GithubService.headers,
-                      )
-                      .then((response) {
-                        if (response.headers.containsKey(
-                          'x-ratelimit-remaining',
-                        )) {
-                          GithubService.apiRemaining.value =
-                              response.headers['x-ratelimit-remaining']!;
-                        }
-                      });
-                },
               ),
             );
           },
