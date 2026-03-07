@@ -16,19 +16,23 @@ class GithubService {
   static const String token = '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';
   static const String owner = 'duyxyz';
   static const String repo = '12A1.Galary';
-  static const String baseUrl = 'https://api.github.com/repos/$owner/$repo/contents';
+  static const String baseUrl =
+      'https://api.github.com/repos/$owner/$repo/contents';
 
   // Lắng nghe trạng thái giới hạn API để cập nhật giao diện
-  static final ValueNotifier<String> apiRemaining = ValueNotifier<String>('Đang kiểm tra...');
+  static final ValueNotifier<String> apiRemaining = ValueNotifier<String>(
+    'Đang kiểm tra...',
+  );
 
   static Map<String, String> get headers => {
-        'Authorization': 'token $token',
-        'Accept': 'application/vnd.github.v3+json',
-      };
+    'Authorization': 'token $token',
+    'Accept': 'application/vnd.github.v3+json',
+  };
 
   static void _updateRateLimit(http.Response response) {
     if (response.headers.containsKey('x-ratelimit-remaining')) {
-      apiRemaining.value = response.headers['x-ratelimit-remaining'] ?? 'Unknown';
+      apiRemaining.value =
+          response.headers['x-ratelimit-remaining'] ?? 'Unknown';
     }
   }
 
@@ -36,11 +40,18 @@ class GithubService {
     // 1. Tải images.json để lấy tỉ lệ w/h của các ảnh tạo khung (Skeleton)
     Map<int, double> aspectRatios = {};
     try {
-      final jsonResponse = await http.get(Uri.parse('https://raw.githubusercontent.com/duyxyz/12A1.Galary/main/images.json'));
+      final jsonResponse = await http.get(
+        Uri.parse(
+          'https://raw.githubusercontent.com/duyxyz/12A1.Galary/main/images.json',
+        ),
+      );
       if (jsonResponse.statusCode == 200) {
         final List<dynamic> jsonData = json.decode(jsonResponse.body);
         for (var item in jsonData) {
-          if (item is Map && item['i'] != null && item['w'] != null && item['h'] != null) {
+          if (item is Map &&
+              item['i'] != null &&
+              item['w'] != null &&
+              item['h'] != null) {
             aspectRatios[item['i']] = item['w'] / item['h'];
           }
         }
@@ -58,7 +69,9 @@ class GithubService {
       List<Map<String, dynamic>> images = [];
       for (var file in data) {
         if (file['name'].toString().endsWith('.webp')) {
-          int index = int.tryParse(file['name'].toString().replaceAll('.webp', '')) ?? 0;
+          int index =
+              int.tryParse(file['name'].toString().replaceAll('.webp', '')) ??
+              0;
           images.add({
             'name': file['name'],
             'path': file['path'],
@@ -67,11 +80,13 @@ class GithubService {
             // Lấy index để sắp xếp như bản web (vd: 1.webp -> 1)
             'index': index,
             // Áp dụng tỉ lệ thật, nếu ko có thì mặc định tỉ lệ vuông 1.0
-            'aspect_ratio': aspectRatios[index] ?? 1.0, 
+            'aspect_ratio': aspectRatios[index] ?? 1.0,
           });
         }
       }
-      images.sort((a, b) => b['index'].compareTo(a['index'])); // Giảm dần hoặc tăng dần tùy ý
+      images.sort(
+        (a, b) => b['index'].compareTo(a['index']),
+      ); // Giảm dần hoặc tăng dần tùy ý
       return images;
     } else {
       throw Exception('Failed to load images');
@@ -99,13 +114,10 @@ class GithubService {
     final response = await http.delete(
       Uri.parse('$baseUrl/$path'),
       headers: headers,
-      body: jsonEncode({
-        'message': 'Delete $path (Android App)',
-        'sha': sha,
-      }),
+      body: jsonEncode({'message': 'Delete $path (Android App)', 'sha': sha}),
     );
     _updateRateLimit(response); // Cập nhật giới hạn Token
-    
+
     if (response.statusCode != 200) {
       throw Exception('Failed to delete image: ${response.body}');
     }
@@ -116,7 +128,9 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   // Tạo một trình lắng nghe trạng thái Theme toàn cục cho App
-  static final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
+  static final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(
+    ThemeMode.system,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -137,9 +151,11 @@ class MyApp extends StatelessWidget {
             useMaterial3: true,
           ),
           themeMode: currentMode,
+          themeAnimationDuration: const Duration(milliseconds: 500),
+          themeAnimationCurve: Curves.easeInOut,
           home: const MainScreen(),
         );
-      }
+      },
     );
   }
 }
@@ -156,6 +172,13 @@ class _MainScreenState extends State<MainScreen> {
   List<Map<String, dynamic>> _images = [];
   bool _isLoading = true;
   String _error = "";
+  final ScrollController _homeScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _homeScrollController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -189,7 +212,13 @@ class _MainScreenState extends State<MainScreen> {
         child: IndexedStack(
           index: _selectedIndex,
           children: [
-            HomeTab(images: _images, isLoading: _isLoading, error: _error, onRefresh: _loadData),
+            HomeTab(
+              images: _images,
+              isLoading: _isLoading,
+              error: _error,
+              onRefresh: _loadData,
+              scrollController: _homeScrollController,
+            ),
             AddTab(images: _images, onRefresh: _loadData),
             DeleteTab(images: _images, onRefresh: _loadData),
             const SettingsTab(),
@@ -199,6 +228,16 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (int index) {
+          if (_selectedIndex == 0 && index == 0) {
+            // Nếu đang ở Home mà lại bấm Home tiếp thì cuộn lên đầu trang
+            if (_homeScrollController.hasClients) {
+              _homeScrollController.animateTo(
+                0,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            }
+          }
           setState(() {
             _selectedIndex = index;
           });
@@ -238,6 +277,7 @@ class HomeTab extends StatefulWidget {
   final bool isLoading;
   final String error;
   final Future<void> Function() onRefresh;
+  final ScrollController scrollController;
 
   const HomeTab({
     super.key,
@@ -245,6 +285,7 @@ class HomeTab extends StatefulWidget {
     required this.isLoading,
     required this.error,
     required this.onRefresh,
+    required this.scrollController,
   });
 
   @override
@@ -252,7 +293,6 @@ class HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
-
   @override
   bool get wantKeepAlive => true; // Giữ nguyên danh sách tổng toàn trang
 
@@ -260,14 +300,21 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   Widget build(BuildContext context) {
     super.build(context);
 
-    if (widget.isLoading) return const Center(child: CircularProgressIndicator());
+    if (widget.isLoading)
+      return const Center(child: CircularProgressIndicator());
     if (widget.error.isNotEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Lỗi: ${widget.error}', style: const TextStyle(color: Colors.red)),
-            ElevatedButton(onPressed: widget.onRefresh, child: const Text('Thử lại'))
+            Text(
+              'Lỗi: ${widget.error}',
+              style: const TextStyle(color: Colors.red),
+            ),
+            ElevatedButton(
+              onPressed: widget.onRefresh,
+              child: const Text('Thử lại'),
+            ),
           ],
         ),
       );
@@ -275,7 +322,15 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
 
     return RefreshIndicator(
       onRefresh: widget.onRefresh,
+      backgroundColor: Colors.black87,
+      color: Colors.white,
+      strokeWidth: 2.5,
+      displacement: 60,
+      edgeOffset: 10,
       child: MasonryGridView.count(
+        controller: widget.scrollController,
+        physics:
+            const AlwaysScrollableScrollPhysics(), // Đệm vật lý gốc: Quăng mạnh kịch trần là đứng lại ngay
         padding: const EdgeInsets.all(4.0),
         crossAxisCount: MediaQuery.of(context).size.width > 600 ? 4 : 2,
         mainAxisSpacing: 4.0,
@@ -284,11 +339,8 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
         itemBuilder: (context, index) {
           final imageUrl = widget.images[index]['download_url'];
           final aspectRatio = widget.images[index]['aspect_ratio'] as double;
-          
-          return _ImageGridItem(
-            imageUrl: imageUrl, 
-            aspectRatio: aspectRatio
-          );
+
+          return _ImageGridItem(imageUrl: imageUrl, aspectRatio: aspectRatio);
         },
       ),
     );
@@ -299,24 +351,23 @@ class _ImageGridItem extends StatefulWidget {
   final String imageUrl;
   final double aspectRatio;
 
-  const _ImageGridItem({
-    required this.imageUrl,
-    required this.aspectRatio,
-  });
+  const _ImageGridItem({required this.imageUrl, required this.aspectRatio});
 
   @override
   State<_ImageGridItem> createState() => _ImageGridItemState();
 }
 
-class _ImageGridItemState extends State<_ImageGridItem> with AutomaticKeepAliveClientMixin {
-  
+class _ImageGridItemState extends State<_ImageGridItem>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true; // <-- Giữ nguyên state của Widget này, không bị hủy khi cuộn khỏi màn hình
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Cần gọi super khi dùng AutomaticKeepAliveClientMixin
-    
+    super.build(
+      context,
+    ); // Cần gọi super khi dùng AutomaticKeepAliveClientMixin
+
     return InkWell(
       onTap: () {
         // Sử dụng lại dạng Popup (Dialog) nhưng lấp đầy toàn màn hình bằng Dialog.fullscreen
@@ -338,8 +389,11 @@ class _ImageGridItemState extends State<_ImageGridItem> with AutomaticKeepAliveC
                       fit: BoxFit.contain,
                       width: double.infinity,
                       height: double.infinity,
-                      placeholder: (context, url) => const Center(child: CircularProgressIndicator(color: Colors.white)),
-                      errorWidget: (context, url, error) => const Icon(Icons.error, color: Colors.white),
+                      placeholder: (context, url) => const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      ),
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.error, color: Colors.white),
                     ),
                   ),
                 ),
@@ -404,13 +458,14 @@ class _AddTabState extends State<AddTab> {
       setState(() => _isUploading = true);
 
       // Nén & chuyển sang webp
-      final Uint8List? compressedBytes = await FlutterImageCompress.compressWithFile(
-        image.path,
-        minWidth: 1920,
-        minHeight: 1920,
-        quality: 80,
-        format: CompressFormat.webp,
-      );
+      final Uint8List? compressedBytes =
+          await FlutterImageCompress.compressWithFile(
+            image.path,
+            minWidth: 1920,
+            minHeight: 1920,
+            quality: 80,
+            format: CompressFormat.webp,
+          );
 
       if (compressedBytes == null) {
         throw Exception("Compression failed");
@@ -421,21 +476,27 @@ class _AddTabState extends State<AddTab> {
       if (widget.images.isNotEmpty) {
         // Ảnh đang được sắp xếp giảm dần, nên phần tử đầu tiên là cao nhất
         // Thêm kiểm tra phòng ngừa
-        final maxIndex = widget.images.reduce((curr, next) => curr['index'] > next['index'] ? curr : next)['index'];
+        final maxIndex = widget.images.reduce(
+          (curr, next) => curr['index'] > next['index'] ? curr : next,
+        )['index'];
         nextIndex = maxIndex + 1;
       }
 
       final filename = '$nextIndex.webp';
 
       await GithubService.uploadImage(filename, compressedBytes);
-      
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tải ảnh lên thành công!')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tải ảnh lên thành công!')),
+        );
       }
       await widget.onRefresh();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -445,14 +506,16 @@ class _AddTabState extends State<AddTab> {
   @override
   Widget build(BuildContext context) {
     if (_isUploading) {
-      return const Center(child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-          Text("Đang xử lý và tải lên Github..."),
-        ],
-      ));
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text("Đang xử lý và tải lên Github..."),
+          ],
+        ),
+      );
     }
 
     return Center(
@@ -466,7 +529,10 @@ class _AddTabState extends State<AddTab> {
             FilledButton(
               onPressed: _pickAndUploadImage,
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12)
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
               child: const Text('Chọn ảnh từ thiết bị'),
             ),
@@ -515,7 +581,9 @@ class _DeleteTabState extends State<DeleteTab> {
         successCount++;
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Đã xóa thành công $successCount ảnh')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Đã xóa thành công $successCount ảnh')),
+        );
       }
       setState(() {
         _selectedSha.clear();
@@ -523,7 +591,9 @@ class _DeleteTabState extends State<DeleteTab> {
       await widget.onRefresh();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi xóa ảnh: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi xóa ảnh: $e')));
       }
     } finally {
       if (mounted) setState(() => _isDeleting = false);
@@ -558,7 +628,7 @@ class _DeleteTabState extends State<DeleteTab> {
             SizedBox(height: 16),
             Text("Đang xóa ảnh..."),
           ],
-        )
+        ),
       );
     }
 
@@ -566,7 +636,10 @@ class _DeleteTabState extends State<DeleteTab> {
       children: [
         Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Text('Đã chọn ${_selectedSha.length} ảnh để xóa', style: const TextStyle(fontWeight: FontWeight.bold)),
+          child: Text(
+            'Đã chọn ${_selectedSha.length} ảnh để xóa',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
         ),
         Expanded(
           child: GridView.builder(
@@ -599,7 +672,8 @@ class _DeleteTabState extends State<DeleteTab> {
                       child: CachedNetworkImage(
                         imageUrl: img['download_url'],
                         fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(color: Colors.grey[300]),
+                        placeholder: (context, url) =>
+                            Container(color: Colors.grey[300]),
                       ),
                     ),
                     if (isSelected)
@@ -610,7 +684,11 @@ class _DeleteTabState extends State<DeleteTab> {
                           border: Border.all(color: Colors.red, width: 3),
                         ),
                         child: const Center(
-                          child: Icon(Icons.check_circle, color: Colors.white, size: 36),
+                          child: Icon(
+                            Icons.check_circle,
+                            color: Colors.white,
+                            size: 36,
+                          ),
                         ),
                       ),
                   ],
@@ -626,24 +704,24 @@ class _DeleteTabState extends State<DeleteTab> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
-                    setState(() { 
-                      _isAuthenticated = false; 
+                    setState(() {
+                      _isAuthenticated = false;
                       _selectedSha.clear();
                     });
-                  }, 
-                  child: const Text('Thoát')
+                  },
+                  child: const Text('Thoát'),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: FilledButton(
                   onPressed: _selectedSha.isEmpty ? null : _deleteSelected,
-                  child: const Text('Xóa mục đã chọn')
+                  child: const Text('Xóa mục đã chọn'),
                 ),
               ),
             ],
           ),
-        )
+        ),
       ],
     );
   }
@@ -669,26 +747,36 @@ class SettingsTab extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               trailing: IconButton(
-                icon: const Icon(Icons.refresh), 
+                icon: const Icon(Icons.refresh),
                 onPressed: () {
                   // Gọi API nhanh để lấy rate limit mới nhất (fetch nhánh main)
-                  http.get(
-                    Uri.parse('https://api.github.com/repos/${GithubService.owner}/${GithubService.repo}'), 
-                    headers: GithubService.headers
-                  ).then((response) {
-                    if (response.headers.containsKey('x-ratelimit-remaining')) {
-                      GithubService.apiRemaining.value = response.headers['x-ratelimit-remaining']!;
-                    }
-                  });
-                }
+                  http
+                      .get(
+                        Uri.parse(
+                          'https://api.github.com/repos/${GithubService.owner}/${GithubService.repo}',
+                        ),
+                        headers: GithubService.headers,
+                      )
+                      .then((response) {
+                        if (response.headers.containsKey(
+                          'x-ratelimit-remaining',
+                        )) {
+                          GithubService.apiRemaining.value =
+                              response.headers['x-ratelimit-remaining']!;
+                        }
+                      });
+                },
               ),
             );
-          }
+          },
         ),
         const Divider(),
         const Padding(
           padding: EdgeInsets.all(16.0),
-          child: Text('Giao diện hiển thị', style: TextStyle(fontWeight: FontWeight.bold)),
+          child: Text(
+            'Giao diện hiển thị',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
         ),
         ValueListenableBuilder<ThemeMode>(
           valueListenable: MyApp.themeNotifier,
@@ -718,7 +806,7 @@ class SettingsTab extends StatelessWidget {
                 ],
               ),
             );
-          }
+          },
         ),
       ],
     );
