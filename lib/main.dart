@@ -596,8 +596,43 @@ class _ImageGridItemState extends State<_ImageGridItem>
     ); // Cần gọi super khi dùng AutomaticKeepAliveClientMixin
 
     return InkWell(
-      onTap: () {
+      onTap: () async {
         AppHaptics.selectionClick();
+        
+        // Đo vị trí hiện tại của ảnh trên màn hình
+        final RenderBox? box = context.findRenderObject() as RenderBox?;
+        if (box != null) {
+          final position = box.localToGlobal(Offset.zero);
+          final bottom = position.dy + box.size.height;
+          final screenHeight = MediaQuery.of(context).size.height;
+          
+          // Giả định thanh nav bar cao khoảng 80 (độ cao mặc định của NavigationBar)
+          const navBarHeight = 80.0;
+          final viewportBottom = screenHeight - navBarHeight;
+
+          // Logic cuộn "vừa đủ":
+          if (bottom > viewportBottom) {
+            // Nếu khuất ở dưới -> cuộn lên vừa đủ để mép dưới ảnh chạm mép nav bar
+            await Scrollable.ensureVisible(
+              context,
+              duration: const Duration(milliseconds: 300),
+              alignment: 1.0, 
+              curve: Curves.easeInOut,
+            );
+          } else if (position.dy < 0) {
+            // Nếu khuất ở trên -> cuộn xuống vừa đủ để mép trên ảnh chạm đỉnh màn hình
+            await Scrollable.ensureVisible(
+              context,
+              duration: const Duration(milliseconds: 300),
+              alignment: 0.0,
+              curve: Curves.easeInOut,
+            );
+          }
+          // Nếu đã nằm gọn ở giữa thì không làm gì cả (không cuộn phí thời gian)
+        }
+
+        if (!mounted) return;
+
         Navigator.of(context).push(
           PageRouteBuilder(
             opaque: false,
@@ -619,23 +654,6 @@ class _ImageGridItemState extends State<_ImageGridItem>
           aspectRatio: widget.aspectRatio,
           child: Hero(
             tag: widget.imageUrl,
-            flightShuttleBuilder: (
-              flightContext,
-              animation,
-              flightDirection,
-              fromHeroContext,
-              toHeroContext,
-            ) {
-              return AspectRatio(
-                aspectRatio: widget.aspectRatio,
-                child: CachedNetworkImage(
-                  imageUrl: widget.imageUrl,
-                  fit: BoxFit.cover,
-                  fadeInDuration: Duration.zero,
-                  fadeOutDuration: Duration.zero,
-                ),
-              );
-            },
             child: CachedNetworkImage(
               imageUrl: widget.imageUrl,
               fit: BoxFit.cover,
@@ -1750,23 +1768,6 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
                         ..scale(_scale),
                       child: Hero(
                         tag: widget.imageUrl,
-                        flightShuttleBuilder: (
-                          flightContext,
-                          animation,
-                          flightDirection,
-                          fromHeroContext,
-                          toHeroContext,
-                        ) {
-                          return AspectRatio(
-                            aspectRatio: widget.aspectRatio,
-                            child: CachedNetworkImage(
-                              imageUrl: widget.imageUrl,
-                              fit: BoxFit.cover,
-                              fadeInDuration: Duration.zero,
-                              fadeOutDuration: Duration.zero,
-                            ),
-                          );
-                        },
                         child: AspectRatio(
                           aspectRatio: widget.aspectRatio,
                           child: CachedNetworkImage(
