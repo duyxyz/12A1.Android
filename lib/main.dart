@@ -139,6 +139,14 @@ class GithubService {
   }
 }
 
+class NoStretchScrollBehavior extends ScrollBehavior {
+  @override
+  Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) {
+    // Vô hiệu hóa hoàn toàn hiệu ứng lấp lánh (glow) hoặc co giãn (stretch) ở mép cuộn
+    return child;
+  }
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -162,6 +170,7 @@ class MyApp extends StatelessWidget {
           builder: (context, currentColor, _) {
             return MaterialApp(
               title: '12A1 THPT Đơn Dương',
+              scrollBehavior: NoStretchScrollBehavior(), // Vô hiệu hóa hiệu ứng co giãn toàn app
               theme: ThemeData(
                 colorScheme: ColorScheme.fromSeed(seedColor: currentColor),
                 useMaterial3: true,
@@ -349,7 +358,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
       children: [
         MasonryGridView.count(
           controller: widget.scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: const ClampingScrollPhysics(),
           padding: const EdgeInsets.all(4.0),
           crossAxisCount: MediaQuery.of(context).size.width > 600 ? 4 : 2,
           mainAxisSpacing: 4.0,
@@ -646,6 +655,7 @@ class _AddTabState extends State<AddTab> {
                   children: [
                     Expanded(
                       child: GridView.builder(
+                        physics: const ClampingScrollPhysics(),
                         padding: const EdgeInsets.all(8),
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
@@ -860,6 +870,7 @@ class _DeleteTabState extends State<DeleteTab> {
         ),
         Expanded(
           child: GridView.builder(
+            physics: const ClampingScrollPhysics(),
             padding: const EdgeInsets.all(8),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
@@ -1055,7 +1066,7 @@ class _SettingsTabState extends State<SettingsTab> {
             return SizedBox(
               height: 60,
               child: ListView.separated(
-                physics: const BouncingScrollPhysics(),
+                physics: const ClampingScrollPhysics(),
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: colors.length,
