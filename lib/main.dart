@@ -18,6 +18,9 @@ import 'package:path/path.dart' as p;
 import 'package:local_auth/local_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:dio/dio.dart';
+import 'package:open_filex/open_filex.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,9 +54,10 @@ class GithubService {
     return tokenFromEnv.isNotEmpty ? tokenFromEnv : '';
   }
   static const String owner = 'duyxyz';
-  static const String repo = '12A1.Galary';
+  static const String imageRepo = '12A1.Galary';
+  static const String appRepo = '12A1.Android';
   static const String baseUrl =
-      'https://api.github.com/repos/$owner/$repo/contents';
+      'https://api.github.com/repos/$owner/$imageRepo/contents';
 
   // Lắng nghe trạng thái giới hạn API để cập nhật giao diện
   static final ValueNotifier<String> apiRemaining = ValueNotifier<String>(
@@ -158,17 +162,71 @@ class GithubService {
     }
   }
 
-  static Future<Map<String, dynamic>?> checkUpdate() async {
+  // Tìm APK phù hợp nhất với cấu hình chip của máy (ABI)
+  static Future<Map<String, dynamic>?> findBestAsset(List<dynamic> assets) async {
+    final deviceInfo = DeviceInfoPlugin();
+    final androidInfo = await deviceInfo.androidInfo;
+    final supportedAbis = androidInfo.supportedAbis; // Vd: [arm64-v8a, armeabi-v7a, armeabi]
+
+    // Ưu tiên các APK khớp ABI
+    for (var abi in supportedAbis) {
+      for (var asset in assets) {
+        final name = asset['name'].toString().toLowerCase();
+        if (name.contains(abi.toLowerCase()) && name.endsWith('.apk')) {
+          return asset as Map<String, dynamic>;
+        }
+      }
+    }
+
+    // Nếu không tìm thấy theo ABI cụ thể, thử tìm file APK bất kỳ (vd: bản universal)
+    for (var asset in assets) {
+      if (asset['name'].toString().endsWith('.apk')) {
+        return asset as Map<String, dynamic>;
+      }
+    }
+    return null;
+  }
+
+  static Future<Map<String, dynamic>> checkUpdate() async {
     try {
       final response = await http.get(
-        Uri.parse('https://api.github.com/repos/$owner/$repo/releases/latest'),
+        Uri.parse('https://api.github.com/repos/$owner/$appRepo/releases/latest'),
         headers: headers,
       );
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        return {
+          'success': true,
+          'data': json.decode(response.body),
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Lỗi ${response.statusCode}: ${response.reasonPhrase}',
+        };
       }
-    } catch (_) {}
-    return null;
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Lỗi kết nối: $e',
+      };
+    }
+  }
+
+  static Future<void> downloadFile({
+    required String url,
+    required String savePath,
+    required Function(double) onProgress,
+  }) async {
+    final dio = Dio();
+    await dio.download(
+      url,
+      savePath,
+      onReceiveProgress: (received, total) {
+        if (total != -1) {
+          onProgress(received / total);
+        }
+      },
+    );
   }
 }
 
@@ -374,6 +432,118 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
   }
 }
 
+// Hàm xử lý việc tải và cài đặt APK tự động
+Future<void> startUpdateProcess(BuildContext context, Map<String, dynamic> updateData) async {
+  // Kiểm tra mounted trước khi bắt đầu
+  if (!context.mounted) return;
+
+  try {
+    debugPrint("Bắt đầu quy trình cập nhật...");
+    final assets = updateData['assets'] as List<dynamic>;
+    final bestAsset = await GithubService.findBestAsset(assets);
+
+    if (bestAsset == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không tìm thấy bản APK phù hợp cho thiết bị này!')),
+        );
+      }
+      return;
+    }
+
+    final downloadUrl = bestAsset['browser_download_url'] as String;
+    final fileName = bestAsset['name'] as String;
+
+    debugPrint("Đã tìm thấy asset: $fileName");
+
+    // Hiển thị dialog tiến trình tải
+    if (!context.mounted) return;
+    
+    final progressNotifier = ValueNotifier<double>(0);
+
+    // Dùng Navigator của root để tránh bị pop nhầm
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) => PopScope(
+        canPop: false, // Ngăn người dùng thoát khi đang tải
+        child: AlertDialog(
+          title: const Text('Đang tải bản cập nhật...'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(fileName, style: const TextStyle(fontSize: 11, color: Colors.grey), textAlign: TextAlign.center),
+              const SizedBox(height: 20),
+              ValueListenableBuilder<double>(
+                valueListenable: progressNotifier,
+                builder: (context, value, _) {
+                  return Column(
+                    children: [
+                      LinearProgressIndicator(value: value),
+                      const SizedBox(height: 8),
+                      Text('${(value * 100).toStringAsFixed(0)}%', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final tempDir = await getTemporaryDirectory();
+    final savePath = p.join(tempDir.path, fileName);
+
+    // Xóa file cũ nếu tồn tại
+    final oldFile = File(savePath);
+    if (await oldFile.exists()) {
+      await oldFile.delete();
+    }
+
+    final dio = Dio(BaseOptions(
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(minutes: 5),
+    ));
+
+    await dio.download(
+      downloadUrl,
+      savePath,
+      onReceiveProgress: (received, total) {
+        if (total != -1) {
+          progressNotifier.value = received / total;
+        }
+      },
+    );
+
+    debugPrint("Tải xong: $savePath");
+
+    // Đóng dialog tải (phải pop cái dialogCtx đã tạo ở trên)
+    if (context.mounted) {
+       Navigator.of(context, rootNavigator: true).pop();
+    }
+
+    // Mở file để cài đặt
+    final result = await OpenFilex.open(savePath);
+    if (result.type != ResultType.done) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi mở APK: ${result.message}')),
+        );
+      }
+    }
+  } catch (e) {
+    debugPrint("Lỗi cập nhật: $e");
+    // Đảm bảo đóng dialog nếu có lỗi
+    if (context.mounted) {
+      if (Navigator.canPop(context)) Navigator.of(context, rootNavigator: true).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi: $e')),
+      );
+    }
+  }
+}
+
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -398,36 +568,32 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _loadData();
-    _checkForUpdate();
+    _checkForUpdateSilent();
   }
 
-  Future<void> _checkForUpdate() async {
-    // Để cho app load xong data trước khi hiện popup update
+  Future<void> _checkForUpdateSilent() async {
+    // Đợi 2 giây cho app ổn định
     await Future.delayed(const Duration(seconds: 2));
     
-    final updateData = await GithubService.checkUpdate();
-    if (updateData == null || !mounted) return;
+    final result = await GithubService.checkUpdate();
+    if (result['success'] == true) {
+      final updateData = result['data'];
+      final latestVersion = updateData['tag_name'].toString().replaceAll('v', '');
+      
+      final info = await PackageInfo.fromPlatform();
+      final currentVersion = info.version;
 
-    // Lấy tag từ Github (ví dụ: v1.0.5 -> 1.0.5)
-    final latestVersion = updateData['tag_name'].toString().replaceAll('v', '');
-    
-    // Lấy version thực tế của App (đã được GitHub Action tiêm vào lúc build)
-    final info = await PackageInfo.fromPlatform();
-    final currentVersion = info.version;
-
-    // Nếu bản trên GitHub khác bản trên máy -> Hiện thông báo
-    if (latestVersion != currentVersion) {
-      _showUpdateDialog(updateData);
+      if (latestVersion != currentVersion && mounted) {
+        _showUpdateDialog(context, updateData);
+      }
     }
   }
 
-  void _showUpdateDialog(Map<String, dynamic> updateData) {
-    if (!mounted) return;
-    
+  void _showUpdateDialog(BuildContext context, Map<String, dynamic> updateData) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         title: const Text('🎉 Có bản cập nhật mới!'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -440,15 +606,13 @@ class _MainScreenState extends State<MainScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogCtx),
             child: const Text('Để sau'),
           ),
           FilledButton(
-            onPressed: () async {
-              final url = Uri.parse(updateData['html_url']);
-              if (await canLaunchUrl(url)) {
-                await launchUrl(url, mode: LaunchMode.externalApplication);
-              }
+            onPressed: () {
+              Navigator.pop(dialogCtx); // Đóng dialog thông báo
+              startUpdateProcess(context, updateData); // Bắt đầu tải & cài đặt
             },
             child: const Text('Cập nhật ngay'),
           ),
@@ -1318,6 +1482,71 @@ class _SettingsTabState extends State<SettingsTab> {
     // Không làm gì cả vì đã xóa chức năng liên quan tần số quét.
   }
 
+  Future<void> _manualUpdateCheck(BuildContext context, String currentVersion) async {
+    // Hiện loading
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Đang kiểm tra bản cập nhật mới...'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    final result = await GithubService.checkUpdate();
+    
+    if (!result['success']) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không thể kiểm tra: ${result['error']}')),
+      );
+      return;
+    }
+
+    final updateData = result['data'];
+    final latestVersion = updateData['tag_name'].toString().replaceAll('v', '');
+    
+    if (!mounted) return;
+
+    if (latestVersion != currentVersion) {
+      _showUpdateDialog(context, updateData);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bạn đang sử dụng phiên bản mới nhất!')),
+      );
+    }
+  }
+
+  void _showUpdateDialog(BuildContext context, Map<String, dynamic> updateData) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('🎉 Có bản cập nhật mới!'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Phiên bản mới: ${updateData['tag_name']}'),
+            const SizedBox(height: 8),
+            Text(updateData['body'] ?? 'Cập nhật tính năng mới và sửa lỗi.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Để sau'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(dialogCtx); // Đóng dialog thông báo
+              startUpdateProcess(context, updateData); // Bắt đầu tải & cài đặt
+            },
+            child: const Text('Cập nhật ngay'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView(
@@ -1345,10 +1574,16 @@ class _SettingsTabState extends State<SettingsTab> {
                     final version = snapshot.hasData ? snapshot.data!.version : '...';
                     return ListTile(
                       title: const Text('Phiên bản hiện tại'),
+                      subtitle: const Text('Nhấn để kiểm tra cập nhật'),
                       trailing: Text(
                         'v$version',
-                        style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
                       ),
+                      onTap: () => _manualUpdateCheck(context, version),
                     );
                   },
                 ),
