@@ -1222,6 +1222,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
                 child: Center(
                   child: InteractiveViewer(
                     transformationController: _transformationController,
+                    clipBehavior: Clip.none,
                     minScale: 1.0,
                     maxScale: 5.0,
                     panEnabled: !_isDragging,
