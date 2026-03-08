@@ -16,6 +16,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:gal/gal.dart';
 import 'package:path/path.dart' as p;
 import 'package:local_auth/local_auth.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,7 +41,15 @@ void main() async {
 }
 
 class GithubService {
-  static const String token = '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';
+  // Ưu tiên lấy từ môi trường Build (GitHub Actions hoặc tham số --dart-define)
+  // Để test local, bạn hãy chạy: flutter run --dart-define=GH_TOKEN=mã_token_của_bạn
+  static String get token {
+    const tokenFromEnv = String.fromEnvironment('GH_TOKEN');
+    // SẠCH 100%: Không để token trong code. 
+    // Khi chạy ở máy nhà (Offline), bạn hãy dùng lệnh: 
+    // flutter run --dart-define=GH_TOKEN=ghp_mã_token_của_bạn
+    return tokenFromEnv.isNotEmpty ? tokenFromEnv : '';
+  }
   static const String owner = 'duyxyz';
   static const String repo = '12A1.Galary';
   static const String baseUrl =
@@ -103,19 +113,18 @@ class GithubService {
             'path': file['path'],
             'sha': file['sha'],
             'download_url': file['download_url'],
-            // Lấy index để sắp xếp như bản web (vd: 1.webp -> 1)
             'index': index,
-            // Áp dụng tỉ lệ thật, nếu ko có thì mặc định tỉ lệ vuông 1.0
             'aspect_ratio': aspectRatios[index] ?? 1.0,
           });
         }
       }
       images.sort(
         (a, b) => b['index'].compareTo(a['index']),
-      ); // Giảm dần hoặc tăng dần tùy ý
+      );
       return images;
     } else {
-      throw Exception('Failed to load images');
+      // Hiện chi tiết lỗi để debug (Rất quan trọng cho bản build Release)
+      throw Exception('Lỗi API (${response.statusCode}): ${response.body}');
     }
   }
 
@@ -147,6 +156,19 @@ class GithubService {
     if (response.statusCode != 200) {
       throw Exception('Failed to delete image: ${response.body}');
     }
+  }
+
+  static Future<Map<String, dynamic>?> checkUpdate() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://api.github.com/repos/$owner/$repo/releases/latest'),
+        headers: headers,
+      );
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (_) {}
+    return null;
   }
 }
 
@@ -376,6 +398,63 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _loadData();
+    _checkForUpdate();
+  }
+
+  Future<void> _checkForUpdate() async {
+    // Để cho app load xong data trước khi hiện popup update
+    await Future.delayed(const Duration(seconds: 2));
+    
+    final updateData = await GithubService.checkUpdate();
+    if (updateData == null || !mounted) return;
+
+    // Lấy tag từ Github (ví dụ: v1.0.5 -> 1.0.5)
+    final latestVersion = updateData['tag_name'].toString().replaceAll('v', '');
+    
+    // Lấy version thực tế của App (đã được GitHub Action tiêm vào lúc build)
+    final info = await PackageInfo.fromPlatform();
+    final currentVersion = info.version;
+
+    // Nếu bản trên GitHub khác bản trên máy -> Hiện thông báo
+    if (latestVersion != currentVersion) {
+      _showUpdateDialog(updateData);
+    }
+  }
+
+  void _showUpdateDialog(Map<String, dynamic> updateData) {
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('🎉 Có bản cập nhật mới!'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Phiên bản mới: ${updateData['tag_name']}'),
+            const SizedBox(height: 8),
+            Text(updateData['body'] ?? 'Cập nhật tính năng mới và sửa lỗi.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Để sau'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final url = Uri.parse(updateData['html_url']);
+              if (await canLaunchUrl(url)) {
+                await launchUrl(url, mode: LaunchMode.externalApplication);
+              }
+            },
+            child: const Text('Cập nhật ngay'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _loadData() async {
@@ -1248,15 +1327,32 @@ class _SettingsTabState extends State<SettingsTab> {
         ValueListenableBuilder<String>(
           valueListenable: GithubService.apiRemaining,
           builder: (context, remaining, _) {
-            return ListTile(
-              title: const Text(
-                'Giới hạn API',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              trailing: Text(
-                '$remaining/5000',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+            return Column(
+              children: [
+                ListTile(
+                  title: const Text(
+                    'Giới hạn API',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  trailing: Text(
+                    '$remaining/5000',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+                FutureBuilder<PackageInfo>(
+                  future: PackageInfo.fromPlatform(),
+                  builder: (context, snapshot) {
+                    final version = snapshot.hasData ? snapshot.data!.version : '...';
+                    return ListTile(
+                      title: const Text('Phiên bản hiện tại'),
+                      trailing: Text(
+                        'v$version',
+                        style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
+                      ),
+                    );
+                  },
+                ),
+              ],
             );
           },
         ),
