@@ -334,8 +334,19 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   Widget build(BuildContext context) {
     super.build(context);
 
-    if (widget.isLoading)
-      return const Center(child: CircularProgressIndicator());
+    if (widget.isLoading) {
+      return Center(
+        child: SizedBox(
+          width: 200,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const LinearProgressIndicator(borderRadius: BorderRadius.all(Radius.circular(4))),
+            ],
+          ),
+        ),
+      );
+    }
     if (widget.error.isNotEmpty) {
       return Center(
         child: Column(
@@ -1051,57 +1062,72 @@ class _SettingsTabState extends State<SettingsTab> {
         ValueListenableBuilder<Color>(
           valueListenable: MyApp.themeColorNotifier,
           builder: (context, currentColor, _) {
-            final List<Color> colors = [
-              Colors.blueAccent,
-              Colors.redAccent,
-              Colors.green,
-              Colors.orange,
-              Colors.purple,
-              Colors.pink,
-              Colors.teal,
-              Colors.amber,
-              Colors.brown,
+            final List<Color> extendedColors = [
+              Colors.red, Colors.redAccent, Colors.pink, Colors.pinkAccent,
+              Colors.purple, Colors.deepPurple, Colors.indigo, Colors.blue,
+              Colors.lightBlue, Colors.cyan, Colors.teal, Colors.green,
+              Colors.lightGreen, Colors.lime, Colors.yellow, Colors.amber,
+              Colors.orange, Colors.deepOrange, Colors.brown, Colors.grey,
+              Colors.blueGrey, const Color(0xFF1E88E5), const Color(0xFF00897B), const Color(0xFFD81B60),
             ];
 
-            return SizedBox(
-              height: 60,
-              child: ListView.separated(
-                physics: const ClampingScrollPhysics(),
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: colors.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 12),
-                itemBuilder: (context, index) {
-                  final color = colors[index];
-                  final isSelected = currentColor == color;
-                  
-                  return GestureDetector(
-                    onTap: () async {
-                      HapticFeedback.selectionClick();
-                      MyApp.themeColorNotifier.value = color;
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.setInt('themeColor', color.value);
-                    },
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        border: isSelected
-                            ? Border.all(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                width: 3,
-                              )
-                            : null,
-                      ),
-                      child: isSelected
-                          ? const Icon(Icons.check, color: Colors.white)
-                          : null,
-                    ),
-                  );
-                },
+            return ListTile(
+              title: const Text('Chọn màu tùy chỉnh'),
+              subtitle: const Text('Nhấn để mở bảng màu'),
+              trailing: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: currentColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Theme.of(context).colorScheme.outline),
+                ),
               ),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: const Text('Chọn màu chủ đạo'),
+                      content: SizedBox(
+                        width: double.maxFinite,
+                        child: GridView.builder(
+                          shrinkWrap: true,
+                          physics: const ClampingScrollPhysics(),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 6,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                          ),
+                          itemCount: extendedColors.length,
+                          itemBuilder: (context, index) {
+                            final color = extendedColors[index];
+                            final isSelected = currentColor.value == color.value;
+                            return GestureDetector(
+                              onTap: () async {
+                                HapticFeedback.selectionClick();
+                                MyApp.themeColorNotifier.value = color;
+                                final prefs = await SharedPreferences.getInstance();
+                                await prefs.setInt('themeColor', color.value);
+                                if (context.mounted) Navigator.pop(context);
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  shape: BoxShape.circle,
+                                  border: isSelected ? Border.all(color: Theme.of(context).colorScheme.onSurface, width: 3) : null,
+                                ),
+                                child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 20) : null,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
             );
           },
         ),
