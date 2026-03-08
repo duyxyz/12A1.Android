@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -15,7 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Load settings trước khi chạy app
+  // Load settings trÆ°á»›c khi cháº¡y app
   final prefs = await SharedPreferences.getInstance();
   
   final themeIndex = prefs.getInt('themeMode') ?? 0; // 0: system, 1: light, 2: dark
@@ -34,9 +34,9 @@ class GithubService {
   static const String baseUrl =
       'https://api.github.com/repos/$owner/$repo/contents';
 
-  // Lắng nghe trạng thái giới hạn API để cập nhật giao diện
+  // Láº¯ng nghe tráº¡ng thÃ¡i giá»›i háº¡n API Ä‘á»ƒ cáº­p nháº­t giao diá»‡n
   static final ValueNotifier<String> apiRemaining = ValueNotifier<String>(
-    'Đang kiểm tra...',
+    'Äang kiá»ƒm tra...',
   );
 
   static Map<String, String> get headers => {
@@ -52,7 +52,7 @@ class GithubService {
   }
 
   static Future<List<Map<String, dynamic>>> fetchImages() async {
-    // 1. Tải images.json để lấy tỉ lệ w/h của các ảnh tạo khung (Skeleton)
+    // 1. Táº£i images.json Ä‘á»ƒ láº¥y tá»‰ lá»‡ w/h cá»§a cÃ¡c áº£nh táº¡o khung (Skeleton)
     Map<int, double> aspectRatios = {};
     try {
       final jsonResponse = await http.get(
@@ -72,12 +72,12 @@ class GithubService {
         }
       }
     } catch (_) {
-      // Bỏ qua lỗi nếu không lấy được images.json
+      // Bá» qua lá»—i náº¿u khÃ´ng láº¥y Ä‘Æ°á»£c images.json
     }
 
-    // 2. Tải danh sách ảnh từ Github Repo
+    // 2. Táº£i danh sÃ¡ch áº£nh tá»« Github Repo
     final response = await http.get(Uri.parse(baseUrl), headers: headers);
-    _updateRateLimit(response); // Cập nhật giới hạn Token
+    _updateRateLimit(response); // Cáº­p nháº­t giá»›i háº¡n Token
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -92,16 +92,16 @@ class GithubService {
             'path': file['path'],
             'sha': file['sha'],
             'download_url': file['download_url'],
-            // Lấy index để sắp xếp như bản web (vd: 1.webp -> 1)
+            // Láº¥y index Ä‘á»ƒ sáº¯p xáº¿p nhÆ° báº£n web (vd: 1.webp -> 1)
             'index': index,
-            // Áp dụng tỉ lệ thật, nếu ko có thì mặc định tỉ lệ vuông 1.0
+            // Ãp dá»¥ng tá»‰ lá»‡ tháº­t, náº¿u ko cÃ³ thÃ¬ máº·c Ä‘á»‹nh tá»‰ lá»‡ vuÃ´ng 1.0
             'aspect_ratio': aspectRatios[index] ?? 1.0,
           });
         }
       }
       images.sort(
         (a, b) => b['index'].compareTo(a['index']),
-      ); // Giảm dần hoặc tăng dần tùy ý
+      ); // Giáº£m dáº§n hoáº·c tÄƒng dáº§n tÃ¹y Ã½
       return images;
     } else {
       throw Exception('Failed to load images');
@@ -118,7 +118,7 @@ class GithubService {
         'content': base64Image,
       }),
     );
-    _updateRateLimit(response); // Cập nhật giới hạn Token
+    _updateRateLimit(response); // Cáº­p nháº­t giá»›i háº¡n Token
 
     if (response.statusCode != 201 && response.statusCode != 200) {
       throw Exception('Failed to upload image: ${response.body}');
@@ -131,7 +131,7 @@ class GithubService {
       headers: headers,
       body: jsonEncode({'message': 'Delete $path (Android App)', 'sha': sha}),
     );
-    _updateRateLimit(response); // Cập nhật giới hạn Token
+    _updateRateLimit(response); // Cáº­p nháº­t giá»›i háº¡n Token
 
     if (response.statusCode != 200) {
       throw Exception('Failed to delete image: ${response.body}');
@@ -142,12 +142,12 @@ class GithubService {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // Tạo một trình lắng nghe trạng thái Theme toàn cục cho App
+  // Táº¡o má»™t trÃ¬nh láº¯ng nghe tráº¡ng thÃ¡i Theme toÃ n cá»¥c cho App
   static final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(
     ThemeMode.system,
   );
   
-  // Trình lắng nghe chọn màu chủ đạo
+  // TrÃ¬nh láº¯ng nghe chá»n mÃ u chá»§ Ä‘áº¡o
   static final ValueNotifier<Color> themeColorNotifier = ValueNotifier(
     Colors.blueAccent,
   );
@@ -161,7 +161,7 @@ class MyApp extends StatelessWidget {
           valueListenable: themeColorNotifier,
           builder: (context, currentColor, _) {
             return MaterialApp(
-              title: '12A1 THPT Đơn Dương',
+              title: '12A1 THPT ÄÆ¡n DÆ°Æ¡ng',
               theme: ThemeData(
                 colorScheme: ColorScheme.fromSeed(seedColor: currentColor),
                 useMaterial3: true,
@@ -295,7 +295,7 @@ class _MainScreenState extends State<MainScreen> {
 }
 
 // ----------------------------------------------------------------------
-// 1. TRANG CHỦ (Home)
+// 1. TRANG CHá»¦ (Home)
 // ----------------------------------------------------------------------
 class HomeTab extends StatefulWidget {
   final List<Map<String, dynamic>> images;
@@ -319,7 +319,7 @@ class HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   @override
-  bool get wantKeepAlive => true; // Giữ nguyên danh sách tổng toàn trang
+  bool get wantKeepAlive => true; // Giá»¯ nguyÃªn danh sÃ¡ch tá»•ng toÃ n trang
 
   @override
   Widget build(BuildContext context) {
@@ -333,12 +333,12 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Lỗi: ${widget.error}',
+              'Lá»—i: ${widget.error}',
               style: const TextStyle(color: Colors.red),
             ),
             ElevatedButton(
               onPressed: widget.onRefresh,
-              child: const Text('Thử lại'),
+              child: const Text('Thá»­ láº¡i'),
             ),
           ],
         ),
@@ -393,13 +393,13 @@ class _ImageGridItem extends StatefulWidget {
 class _ImageGridItemState extends State<_ImageGridItem>
     with AutomaticKeepAliveClientMixin {
   @override
-  bool get wantKeepAlive => true; // <-- Giữ nguyên state của Widget này, không bị hủy khi cuộn khỏi màn hình
+  bool get wantKeepAlive => true; // <-- Giá»¯ nguyÃªn state cá»§a Widget nÃ y, khÃ´ng bá»‹ há»§y khi cuá»™n khá»i mÃ n hÃ¬nh
 
   @override
   Widget build(BuildContext context) {
     super.build(
       context,
-    ); // Cần gọi super khi dùng AutomaticKeepAliveClientMixin
+    ); // Cáº§n gá»i super khi dÃ¹ng AutomaticKeepAliveClientMixin
 
     return InkWell(
       onTap: () {
@@ -432,14 +432,16 @@ class _ImageGridItemState extends State<_ImageGridItem>
               fromHeroContext,
               toHeroContext,
             ) {
-              return AspectRatio(
-                aspectRatio: widget.aspectRatio,
-                child: CachedNetworkImage(
-                  imageUrl: widget.imageUrl,
-                  fit: BoxFit.cover,
-                  fadeInDuration: Duration.zero,
-                  fadeOutDuration: Duration.zero,
-                ),
+              return AnimatedBuilder(
+                animation: animation,
+                builder: (context, child) {
+                  return CachedNetworkImage(
+                    imageUrl: widget.imageUrl,
+                    fit: BoxFit.cover,
+                    fadeInDuration: Duration.zero,
+                    fadeOutDuration: Duration.zero,
+                  );
+                },
               );
             },
             child: CachedNetworkImage(
@@ -464,7 +466,7 @@ class _ImageGridItemState extends State<_ImageGridItem>
 }
 
 // ----------------------------------------------------------------------
-// 2. TRANG ADD (Tải ảnh lên)
+// 2. TRANG ADD (Táº£i áº£nh lÃªn)
 // ----------------------------------------------------------------------
 class AddTab extends StatefulWidget {
   final List<Map<String, dynamic>> images;
@@ -480,9 +482,9 @@ class _AddTabState extends State<AddTab> {
   bool _isUploading = false;
   String _uploadStatus = "";
   final ImagePicker _picker = ImagePicker();
-  List<XFile> _selectedImages = []; // Danh sách ảnh đã chọn
+  List<XFile> _selectedImages = []; // Danh sÃ¡ch áº£nh Ä‘Ã£ chá»n
 
-  // 1. Chọn nhiều ảnh và thêm vào danh sách
+  // 1. Chá»n nhiá»u áº£nh vÃ  thÃªm vÃ o danh sÃ¡ch
   Future<void> _pickImage() async {
     HapticFeedback.lightImpact();
     try {
@@ -495,13 +497,13 @@ class _AddTabState extends State<AddTab> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi chọn ảnh: $e')),
+          SnackBar(content: Text('Lá»—i chá»n áº£nh: $e')),
         );
       }
     }
   }
 
-  // 2. Nén và tải từng ảnh lên Github
+  // 2. NÃ©n vÃ  táº£i tá»«ng áº£nh lÃªn Github
   Future<void> _uploadImage() async {
     HapticFeedback.lightImpact();
     if (_selectedImages.isEmpty) return;
@@ -510,18 +512,18 @@ class _AddTabState extends State<AddTab> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Xác nhận Đăng Ảnh'),
+          title: const Text('XÃ¡c nháº­n ÄÄƒng áº¢nh'),
           content: Text(
-            'Bạn có chắc chắn muốn đăng ${_selectedImages.length} bức ảnh này lên Bộ Sưu Tập chung không?',
+            'Báº¡n cÃ³ cháº¯c cháº¯n muá»‘n Ä‘Äƒng ${_selectedImages.length} bá»©c áº£nh nÃ y lÃªn Bá»™ SÆ°u Táº­p chung khÃ´ng?',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Hủy'),
+              child: const Text('Há»§y'),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Đồng ý'),
+              child: const Text('Äá»“ng Ã½'),
             ),
           ],
         );
@@ -532,20 +534,20 @@ class _AddTabState extends State<AddTab> {
 
     setState(() {
       _isUploading = true;
-      _uploadStatus = "Bắt đầu tải lên...";
+      _uploadStatus = "Báº¯t Ä‘áº§u táº£i lÃªn...";
     });
 
     try {
-      // Sao chép danh sách ảnh cũ để tính index chính xác
+      // Sao chÃ©p danh sÃ¡ch áº£nh cÅ© Ä‘á»ƒ tÃ­nh index chÃ­nh xÃ¡c
       List<Map<String, dynamic>> currentImages = List.from(widget.images);
 
       for (int i = 0; i < _selectedImages.length; i++) {
         final image = _selectedImages[i];
         setState(() {
-          _uploadStatus = "Đang xử lý ${i + 1}/${_selectedImages.length}...";
+          _uploadStatus = "Äang xá»­ lÃ½ ${i + 1}/${_selectedImages.length}...";
         });
 
-        // Nén & chuyển sang webp
+        // NÃ©n & chuyá»ƒn sang webp
         final Uint8List? compressedBytes =
             await FlutterImageCompress.compressWithFile(
               image.path,
@@ -557,7 +559,7 @@ class _AddTabState extends State<AddTab> {
 
         if (compressedBytes == null) continue;
 
-        // Tính tên file (tìm số trống nhỏ nhất)
+        // TÃ­nh tÃªn file (tÃ¬m sá»‘ trá»‘ng nhá» nháº¥t)
         int nextIndex = 1;
         List<int> existingIndexes = currentImages
             .map<int>((img) => img['index'] as int)
@@ -575,13 +577,13 @@ class _AddTabState extends State<AddTab> {
         final filename = '$nextIndex.webp';
         await GithubService.uploadImage(filename, compressedBytes);
 
-        // Giả lập cập nhật danh sách local để ảnh tiếp theo không trùng index
+        // Giáº£ láº­p cáº­p nháº­t danh sÃ¡ch local Ä‘á»ƒ áº£nh tiáº¿p theo khÃ´ng trÃ¹ng index
         currentImages.add({'index': nextIndex});
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã tải tất cả ảnh lên thành công!')),
+          const SnackBar(content: Text('ÄÃ£ táº£i táº¥t cáº£ áº£nh lÃªn thÃ nh cÃ´ng!')),
         );
         setState(() {
           _selectedImages.clear();
@@ -592,7 +594,7 @@ class _AddTabState extends State<AddTab> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Lỗi tải lên: $e')));
+        ).showSnackBar(SnackBar(content: Text('Lá»—i táº£i lÃªn: $e')));
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -620,12 +622,12 @@ class _AddTabState extends State<AddTab> {
     return Scaffold(
       appBar: _selectedImages.isNotEmpty && !_isUploading
           ? AppBar(
-              title: Text('Đã chọn ${_selectedImages.length} ảnh'),
+              title: Text('ÄÃ£ chá»n ${_selectedImages.length} áº£nh'),
               actions: [
                 IconButton(
                   onPressed: _clearSelection,
                   icon: const Icon(Icons.delete_sweep_outlined),
-                  tooltip: 'Xóa hết',
+                  tooltip: 'XÃ³a háº¿t',
                 ),
               ],
             )
@@ -712,7 +714,7 @@ class _AddTabState extends State<AddTab> {
                         child: FilledButton.icon(
                           onPressed: _uploadImage,
                           icon: const Icon(Icons.cloud_upload),
-                          label: const Text('Đăng tất cả ảnh'),
+                          label: const Text('ÄÄƒng táº¥t cáº£ áº£nh'),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
@@ -735,7 +737,7 @@ class _AddTabState extends State<AddTab> {
                             vertical: 16,
                           ),
                         ),
-                        child: const Text('Chọn ảnh từ thiết bị'),
+                        child: const Text('Chá»n áº£nh tá»« thiáº¿t bá»‹'),
                       ),
                     ],
                   ),
@@ -745,7 +747,7 @@ class _AddTabState extends State<AddTab> {
 }
 
 // ----------------------------------------------------------------------
-// 3. TRANG DELETE (Xóa ảnh)
+// 3. TRANG DELETE (XÃ³a áº£nh)
 // ----------------------------------------------------------------------
 class DeleteTab extends StatefulWidget {
   final List<Map<String, dynamic>> images;
@@ -776,17 +778,17 @@ class _DeleteTabState extends State<DeleteTab> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Xác nhận Xóa Ảnh'),
-          content: Text('Bạn có chắc chắn muốn xóa vĩnh viễn ${_selectedSha.length} bức ảnh đã chọn khỏi Bộ Sưu Tập không? Hành động này không thể hoàn tác.'),
+          title: const Text('XÃ¡c nháº­n XÃ³a áº¢nh'),
+          content: Text('Báº¡n cÃ³ cháº¯c cháº¯n muá»‘n xÃ³a vÄ©nh viá»…n ${_selectedSha.length} bá»©c áº£nh Ä‘Ã£ chá»n khá»i Bá»™ SÆ°u Táº­p khÃ´ng? HÃ nh Ä‘á»™ng nÃ y khÃ´ng thá»ƒ hoÃ n tÃ¡c.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Hủy'),
+              child: const Text('Há»§y'),
             ),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Xóa vĩnh viễn'),
+              child: const Text('XÃ³a vÄ©nh viá»…n'),
             ),
           ],
         );
@@ -800,14 +802,14 @@ class _DeleteTabState extends State<DeleteTab> {
     try {
       int successCount = 0;
       for (String sha in _selectedSha) {
-        // Tìm thông tin file theo sha
+        // TÃ¬m thÃ´ng tin file theo sha
         final img = widget.images.firstWhere((e) => e['sha'] == sha);
         await GithubService.deleteImage(img['path'], sha);
         successCount++;
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đã xóa thành công $successCount ảnh')),
+          SnackBar(content: Text('ÄÃ£ xÃ³a thÃ nh cÃ´ng $successCount áº£nh')),
         );
       }
       setState(() {
@@ -818,7 +820,7 @@ class _DeleteTabState extends State<DeleteTab> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Lỗi xóa ảnh: $e')));
+        ).showSnackBar(SnackBar(content: Text('Lá»—i xÃ³a áº£nh: $e')));
       }
     } finally {
       if (mounted) setState(() => _isDeleting = false);
@@ -851,7 +853,7 @@ class _DeleteTabState extends State<DeleteTab> {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
-            Text("Đang xóa ảnh..."),
+            Text("Äang xÃ³a áº£nh..."),
           ],
         ),
       );
@@ -862,7 +864,7 @@ class _DeleteTabState extends State<DeleteTab> {
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: Text(
-            'Đã chọn ${_selectedSha.length} ảnh để xóa',
+            'ÄÃ£ chá»n ${_selectedSha.length} áº£nh Ä‘á»ƒ xÃ³a',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ),
@@ -938,14 +940,14 @@ class _DeleteTabState extends State<DeleteTab> {
                       _selectedSha.clear();
                     });
                   },
-                  child: const Text('Thoát'),
+                  child: const Text('ThoÃ¡t'),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: FilledButton(
                   onPressed: _selectedSha.isEmpty ? null : _deleteSelected,
-                  child: const Text('Xóa mục đã chọn'),
+                  child: const Text('XÃ³a má»¥c Ä‘Ã£ chá»n'),
                 ),
               ),
             ],
@@ -957,7 +959,7 @@ class _DeleteTabState extends State<DeleteTab> {
 }
 
 // ----------------------------------------------------------------------
-// 4. TRANG SETTINGS (Cài đặt & Lịch sử)
+// 4. TRANG SETTINGS (CÃ i Ä‘áº·t & Lá»‹ch sá»­)
 // ----------------------------------------------------------------------
 class SettingsTab extends StatefulWidget {
   const SettingsTab({super.key});
@@ -970,18 +972,18 @@ class _SettingsTabState extends State<SettingsTab> {
   @override
   void initState() {
     super.initState();
-    // Mỗi khi vào tab Settings, ép cập nhật lại số Hz thật
+    // Má»—i khi vÃ o tab Settings, Ã©p cáº­p nháº­t láº¡i sá»‘ Hz tháº­t
     _updateHz();
   }
 
   Future<void> _updateHz() async {
-    // Không làm gì cả vì đã xóa chức năng liên quan tần số quét.
+    // KhÃ´ng lÃ m gÃ¬ cáº£ vÃ¬ Ä‘Ã£ xÃ³a chá»©c nÄƒng liÃªn quan táº§n sá»‘ quÃ©t.
   }
 
   @override
   Widget build(BuildContext context) {
     return ListView(
-      physics: const ClampingScrollPhysics(), // Tắt hiệu ứng kéo giãn cao su
+      physics: const ClampingScrollPhysics(), // Táº¯t hiá»‡u á»©ng kÃ©o giÃ£n cao su
       children: [
         const Divider(),
         ValueListenableBuilder<String>(
@@ -999,7 +1001,7 @@ class _SettingsTabState extends State<SettingsTab> {
         const Padding(
           padding: EdgeInsets.all(16.0),
           child: Text(
-            'Giao diện hiển thị',
+            'Giao diá»‡n hiá»ƒn thá»‹',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
         ),
@@ -1018,17 +1020,17 @@ class _SettingsTabState extends State<SettingsTab> {
               child: Column(
                 children: [
                   const RadioListTile<ThemeMode>(
-                    title: Text('Theo hệ thống'),
+                    title: Text('Theo há»‡ thá»‘ng'),
                     secondary: Icon(Icons.brightness_auto),
                     value: ThemeMode.system,
                   ),
                   const RadioListTile<ThemeMode>(
-                    title: Text('Chế độ sáng'),
+                    title: Text('Cháº¿ Ä‘á»™ sÃ¡ng'),
                     secondary: Icon(Icons.wb_sunny_rounded),
                     value: ThemeMode.light,
                   ),
                   const RadioListTile<ThemeMode>(
-                    title: Text('Chế độ tối'),
+                    title: Text('Cháº¿ Ä‘á»™ tá»‘i'),
                     secondary: Icon(Icons.nightlight_round),
                     value: ThemeMode.dark,
                   ),
@@ -1041,7 +1043,7 @@ class _SettingsTabState extends State<SettingsTab> {
         const Padding(
           padding: EdgeInsets.all(16.0),
           child: Text(
-            'Màu chủ đạo',
+            'MÃ u chá»§ Ä‘áº¡o',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
         ),
@@ -1109,7 +1111,7 @@ class _SettingsTabState extends State<SettingsTab> {
 }
 
 // ----------------------------------------------------------------------
-// 5. WIDGET XEM ẢNH TOÀN MÀN HÌNH (Full Screen Viewer)
+// 5. WIDGET XEM áº¢NH TOÃ€N MÃ€N HÃŒNH (Full Screen Viewer)
 // ----------------------------------------------------------------------
 class FullScreenImageViewer extends StatefulWidget {
   final String imageUrl;
@@ -1131,7 +1133,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
   Offset _dragOffset = Offset.zero;
   double _scale = 1.0;
   bool _isDragging = false;
-  int _pointerCount = 0; // Đếm số lượng ngón tay trên màn hình
+  int _pointerCount = 0; // Äáº¿m sá»‘ lÆ°á»£ng ngÃ³n tay trÃªn mÃ n hÃ¬nh
 
   @override
   void dispose() {
@@ -1141,7 +1143,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
 
   @override
   Widget build(BuildContext context) {
-    // Độ mờ của nền dựa trên khoảng cách kéo (tối đa 300px)
+    // Äá»™ má» cá»§a ná»n dá»±a trÃªn khoáº£ng cÃ¡ch kÃ©o (tá»‘i Ä‘a 300px)
     final double opacity =
         (1.0 - (_dragOffset.distance / 300)).clamp(0.0, 1.0);
 
@@ -1159,12 +1161,12 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
             onPointerMove: (event) {
               final scale = _transformationController.value.getMaxScaleOnAxis();
 
-              // Chỉ cho phép kéo thoát nếu:
-              // 1. Chỉ có 1 ngón tay chạm
-              // 2. Không đang phóng to (scale <= 1.0)
+              // Chá»‰ cho phÃ©p kÃ©o thoÃ¡t náº¿u:
+              // 1. Chá»‰ cÃ³ 1 ngÃ³n tay cháº¡m
+              // 2. KhÃ´ng Ä‘ang phÃ³ng to (scale <= 1.0)
               if (_pointerCount == 1 && scale <= 1.0) {
                 if (!_isDragging) {
-                  // Nếu chưa bắt đầu kéo, kiểm tra xem đã di chuyển đủ xa chưa (threshold)
+                  // Náº¿u chÆ°a báº¯t Ä‘áº§u kÃ©o, kiá»ƒm tra xem Ä‘Ã£ di chuyá»ƒn Ä‘á»§ xa chÆ°a (threshold)
                   if (event.localDelta.distance > 2) {
                     setState(() {
                       _isDragging = true;
@@ -1180,7 +1182,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
                   });
                 }
               } else if (_pointerCount > 1) {
-                // Nếu có nhiều hơn 1 ngón tay, hủy trạng thái kéo thoát ngay lập tức
+                // Náº¿u cÃ³ nhiá»u hÆ¡n 1 ngÃ³n tay, há»§y tráº¡ng thÃ¡i kÃ©o thoÃ¡t ngay láº­p tá»©c
                 if (_isDragging) {
                   setState(() {
                     _isDragging = false;
@@ -1235,14 +1237,16 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
                         fromHeroContext,
                         toHeroContext,
                       ) {
-                        return AspectRatio(
-                          aspectRatio: widget.aspectRatio,
-                          child: CachedNetworkImage(
-                            imageUrl: widget.imageUrl,
-                            fit: BoxFit.cover,
-                            fadeInDuration: Duration.zero,
-                            fadeOutDuration: Duration.zero,
-                          ),
+                        return AnimatedBuilder(
+                          animation: animation,
+                          builder: (context, child) {
+                            return CachedNetworkImage(
+                              imageUrl: widget.imageUrl,
+                              fit: BoxFit.cover,
+                              fadeInDuration: Duration.zero,
+                              fadeOutDuration: Duration.zero,
+                            );
+                          },
                         );
                       },
                       child: AspectRatio(
@@ -1276,7 +1280,6 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
               ),
             ),
           ),
-
         ],
       ),
     );
