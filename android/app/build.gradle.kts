@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -16,7 +18,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = "17"
     }
 
     defaultConfig {
@@ -31,24 +33,29 @@ android {
     }
 
     val keystorePropertiesFile = rootProject.file("key.properties")
-    val keystoreProperties = java.util.Properties()
+    val keystoreProperties = Properties()
     if (keystorePropertiesFile.exists()) {
-        keystoreProperties.load(keystorePropertiesFile.inputStream())
+        keystorePropertiesFile.inputStream().use { stream ->
+            keystoreProperties.load(stream)
+        }
     }
 
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String?
-            keyPassword = keystoreProperties["keyPassword"] as String?
-            storeFile = keystoreProperties["storeFile"]?.let { file(it) }
-            storePassword = keystoreProperties["storePassword"] as String?
+            keyAlias = keystoreProperties.getProperty("keyAlias")
+            keyPassword = keystoreProperties.getProperty("keyPassword")
+            storeFile = keystoreProperties.getProperty("storeFile")?.let { file(it) }
+            storePassword = keystoreProperties.getProperty("storePassword")
         }
     }
 
     buildTypes {
         release {
             // Sử dụng cấu hình release nếu có file key.properties
-            if (keystorePropertiesFile.exists()) {
+            val isSigningConfigured = keystorePropertiesFile.exists() && 
+                                      keystoreProperties.containsKey("storeFile")
+            
+            if (isSigningConfigured) {
                 signingConfig = signingConfigs.getByName("release")
             } else {
                 signingConfig = signingConfigs.getByName("debug")
