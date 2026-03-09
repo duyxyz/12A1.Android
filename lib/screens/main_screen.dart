@@ -41,18 +41,17 @@ class _MainScreenState extends State<MainScreen> {
     final result = await GithubService.checkUpdate();
     if (result['success'] == true) {
       final updateData = result['data'];
-      final String commits = result['commits'] ?? "";
       final latestVersion = updateData['tag_name'].toString().replaceAll('v', '');
       final info = await PackageInfo.fromPlatform();
       final currentVersion = info.version;
 
       if (latestVersion != currentVersion && mounted) {
-        _showUpdateDialog(context, updateData, commits);
+        _showUpdateDialog(context, updateData);
       }
     }
   }
 
-  void _showUpdateDialog(BuildContext context, Map<String, dynamic> updateData, String commits) {
+  void _showUpdateDialog(BuildContext context, Map<String, dynamic> updateData) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -70,7 +69,7 @@ class _MainScreenState extends State<MainScreen> {
               constraints: const BoxConstraints(maxHeight: 200),
               child: SingleChildScrollView(
                 child: Text(
-                  commits.isNotEmpty ? commits : (updateData['body'] ?? 'Cập nhật tính năng mới và sửa lỗi.'),
+                  updateData['body'] ?? 'Cập nhật tính năng mới và sửa lỗi.',
                   style: const TextStyle(fontSize: 13),
                 ),
               ),

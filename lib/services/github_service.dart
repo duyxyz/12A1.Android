@@ -138,36 +138,19 @@ class GithubService {
 
   static Future<Map<String, dynamic>> checkUpdate() async {
     try {
-      final releaseResponse = await http.get(
+      final response = await http.get(
         Uri.parse('https://api.github.com/repos/$owner/$appRepo/releases/latest'),
         headers: headers,
       );
-
-      if (releaseResponse.statusCode == 200) {
-        final releaseData = json.decode(releaseResponse.body);
-        
-        // Thử lấy thêm các commit gần đây để làm Changelog
-        String commitsChangelog = "";
-        try {
-          final commitsResponse = await http.get(
-            Uri.parse('https://api.github.com/repos/$owner/$appRepo/commits?per_page=5'),
-            headers: headers,
-          );
-          if (commitsResponse.statusCode == 200) {
-            final List<dynamic> commitsData = json.decode(commitsResponse.body);
-            commitsChangelog = commitsData.map((c) => "• ${c['commit']['message']}").join("\n");
-          }
-        } catch (_) {}
-
+      if (response.statusCode == 200) {
         return {
           'success': true,
-          'data': releaseData,
-          'commits': commitsChangelog,
+          'data': json.decode(response.body),
         };
       } else {
         return {
           'success': false,
-          'error': 'Lỗi ${releaseResponse.statusCode}: ${releaseResponse.reasonPhrase}',
+          'error': 'Lỗi ${response.statusCode}: ${response.reasonPhrase}',
         };
       }
     } catch (e) {
