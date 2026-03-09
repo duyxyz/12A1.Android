@@ -41,7 +41,10 @@ class _MainScreenState extends State<MainScreen> {
     final result = await GithubService.checkUpdate();
     if (result['success'] == true) {
       final updateData = result['data'];
-      final latestVersion = updateData['tag_name'].toString().replaceAll('v', '');
+      final latestVersion = updateData['tag_name'].toString().replaceAll(
+        'v',
+        '',
+      );
       final info = await PackageInfo.fromPlatform();
       final currentVersion = info.version;
 
@@ -51,7 +54,10 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  void _showUpdateDialog(BuildContext context, Map<String, dynamic> updateData) {
+  void _showUpdateDialog(
+    BuildContext context,
+    Map<String, dynamic> updateData,
+  ) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -61,9 +67,15 @@ class _MainScreenState extends State<MainScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Phiên bản mới: ${updateData['tag_name']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              'Phiên bản mới: ${updateData['tag_name']}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
-            const Text('Nội dung thay đổi:', style: TextStyle(fontSize: 13, color: Colors.grey)),
+            const Text(
+              'Nội dung thay đổi:',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
             const SizedBox(height: 4),
             Container(
               constraints: const BoxConstraints(maxHeight: 200),
@@ -112,6 +124,32 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
+  void _showRefreshDialog() {
+    AppHaptics.mediumImpact();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Làm mới trang ?'),
+        content: const Text(
+          'Bạn có muốn tải lại danh sách ảnh từ máy chủ không?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Để sau'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _loadData();
+            },
+            child: const Text('Làm mới ngay'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -136,49 +174,87 @@ class _MainScreenState extends State<MainScreen> {
                 onRefresh: _loadData,
                 scrollController: _homeScrollController,
               ),
-              AddTab(images: _images, onRefresh: _loadData),
-              DeleteTab(images: _images, onRefresh: _loadData),
+              AddTab(
+                images: _images,
+                isLoading: _isLoading,
+                error: _error,
+                onRefresh: _loadData,
+              ),
+              DeleteTab(
+                images: _images,
+                isLoading: _isLoading,
+                error: _error,
+                onRefresh: _loadData,
+              ),
               SettingsTab(isSelected: _selectedIndex == 3),
             ],
           ),
         ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: (int index) {
-            if (_selectedIndex == 0 && index == 0) {
-              if (_homeScrollController.hasClients) {
-                _homeScrollController.animateTo(
-                  0,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOut,
-                );
-              }
-            }
-            AppHaptics.lightImpact();
-            setState(() {
-              _selectedIndex = index;
-            });
-          },
-          destinations: const <NavigationDestination>[
-            NavigationDestination(
-              selectedIcon: Icon(Icons.home),
-              icon: Icon(Icons.home_outlined),
-              label: 'Trang chủ',
+        bottomNavigationBar: Stack(
+          children: [
+            NavigationBar(
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: (int index) {
+                if (_selectedIndex == 0 && index == 0) {
+                  if (_homeScrollController.hasClients) {
+                    _homeScrollController.animateTo(
+                      0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    );
+                  }
+                }
+                AppHaptics.lightImpact();
+                setState(() {
+                  _selectedIndex = index;
+                });
+              },
+              destinations: const <NavigationDestination>[
+                NavigationDestination(
+                  selectedIcon: Icon(Icons.home),
+                  icon: Icon(Icons.home_outlined),
+                  label: 'Trang chủ',
+                ),
+                NavigationDestination(
+                  selectedIcon: Icon(Icons.add_circle),
+                  icon: Icon(Icons.add_circle_outline),
+                  label: 'Thêm',
+                ),
+                NavigationDestination(
+                  selectedIcon: Icon(Icons.delete),
+                  icon: Icon(Icons.delete_outline),
+                  label: 'Xóa',
+                ),
+                NavigationDestination(
+                  selectedIcon: Icon(Icons.settings),
+                  icon: Icon(Icons.settings_outlined),
+                  label: 'Cài đặt',
+                ),
+              ],
             ),
-            NavigationDestination(
-              selectedIcon: Icon(Icons.add_circle),
-              icon: Icon(Icons.add_circle_outline),
-              label: 'Thêm',
-            ),
-            NavigationDestination(
-              selectedIcon: Icon(Icons.delete),
-              icon: Icon(Icons.delete_outline),
-              label: 'Xóa',
-            ),
-            NavigationDestination(
-              selectedIcon: Icon(Icons.settings),
-              icon: Icon(Icons.settings_outlined),
-              label: 'Cài đặt',
+            // Lớp phủ trong suốt để bắt sự kiện Long Press vào nút Trang chủ
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: MediaQuery.of(context).size.width / 4,
+              child: InkWell(
+                onLongPress: _showRefreshDialog,
+                onTap: () {
+                  // Giữ nguyên logic tap của NavigationBar
+                  if (_selectedIndex != 0) {
+                    setState(() => _selectedIndex = 0);
+                  } else {
+                    if (_homeScrollController.hasClients) {
+                      _homeScrollController.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                      );
+                    }
+                  }
+                },
+              ),
             ),
           ],
         ),

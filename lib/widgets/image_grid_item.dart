@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:shimmer/shimmer.dart';
+import 'pulse_skeleton.dart';
 import '../utils/haptics.dart';
 import 'full_screen_viewer.dart';
 
@@ -79,16 +79,17 @@ class _ImageGridItemState extends State<ImageGridItem>
             child: CachedNetworkImage(
               imageUrl: widget.imageUrl,
               fit: BoxFit.cover,
-              fadeInDuration: Duration.zero,
-              fadeOutDuration: Duration.zero,
-              placeholder: (context, url) => Shimmer.fromColors(
-                baseColor: Colors.grey.withValues(alpha: 0.3),
-                highlightColor: Colors.grey.withValues(alpha: 0.1),
-                child: Container(
-                  color: Colors.white,
+              fadeInDuration: const Duration(milliseconds: 300),
+              fadeOutDuration: const Duration(milliseconds: 300),
+              placeholder: (context, url) => const PulseSkeleton(),
+              errorWidget: (context, url, error) => Container(
+                color: Theme.of(context).colorScheme.errorContainer,
+                child: Icon(
+                  Icons.image_not_supported_rounded,
+                  color: Theme.of(context).colorScheme.error,
+                  size: 24,
                 ),
               ),
-              errorWidget: (context, url, error) => const Icon(Icons.error),
             ),
           ),
         ),

@@ -5,12 +5,22 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import '../services/github_service.dart';
 import '../utils/haptics.dart';
+import '../widgets/error_view.dart';
+import '../widgets/pulse_skeleton.dart';
 
 class AddTab extends StatefulWidget {
   final List<Map<String, dynamic>> images;
+  final bool isLoading;
+  final String error;
   final Future<void> Function() onRefresh;
 
-  const AddTab({super.key, required this.images, required this.onRefresh});
+  const AddTab({
+    super.key,
+    required this.images,
+    required this.isLoading,
+    required this.error,
+    required this.onRefresh,
+  });
 
   @override
   State<AddTab> createState() => _AddTabState();
@@ -149,6 +159,14 @@ class _AddTabState extends State<AddTab> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.error.isNotEmpty) {
+      return ErrorView(
+        message: 'Lỗi nạp dữ liệu: ${widget.error}',
+        onRetry: widget.onRefresh,
+        isFullScreen: false,
+      );
+    }
+
     return Scaffold(
       appBar: _selectedImages.isNotEmpty && !_isUploading
           ? AppBar(
@@ -167,9 +185,9 @@ class _AddTabState extends State<AddTab> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const CircularProgressIndicator(),
+                  const PulseSkeleton(width: 100, height: 100),
                   const SizedBox(height: 16),
-                  Text(_uploadStatus),
+                  Text(_uploadStatus, style: const TextStyle(fontWeight: FontWeight.bold)),
                 ],
               ),
             )
@@ -253,17 +271,29 @@ class _AddTabState extends State<AddTab> {
                     ),
                   ],
                 )
-              : Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        iconSize: 120, 
-                        onPressed: _pickImage,
-                        icon: const Icon(Icons.add_photo_alternate_outlined),
+              : Stack(
+                  children: [
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton(
+                            iconSize: 120, 
+                            onPressed: _pickImage,
+                            icon: const Icon(Icons.add_photo_alternate_outlined),
+                          ),
+                          const Text('Nhấn để chọn ảnh từ máy'),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    if (widget.isLoading)
+                      const Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: LinearProgressIndicator(),
+                      ),
+                  ],
                 ),
     );
   }

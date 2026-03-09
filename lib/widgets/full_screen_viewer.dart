@@ -271,20 +271,6 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
                             fit: BoxFit.cover,
                             width: double.infinity,
                             height: double.infinity,
-                            placeholder: (context, url) => Center(
-                              child: Shimmer.fromColors(
-                                baseColor: Colors.grey.withValues(alpha: 0.3),
-                                highlightColor: Colors.grey.withValues(alpha: 0.1),
-                                child: Container(
-                                  width: 100,
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ),
                             errorWidget: (context, url, error) =>
                                 const Icon(Icons.error, color: Colors.white),
                           ),

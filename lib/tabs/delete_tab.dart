@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:shimmer/shimmer.dart';
 import '../services/github_service.dart';
 import '../utils/haptics.dart';
+import '../widgets/pulse_skeleton.dart';
+import '../widgets/error_view.dart';
 
 class DeleteTab extends StatefulWidget {
   final List<Map<String, dynamic>> images;
+  final bool isLoading;
+  final String error;
   final Future<void> Function() onRefresh;
 
-  const DeleteTab({super.key, required this.images, required this.onRefresh});
+  const DeleteTab({
+    super.key,
+    required this.images,
+    required this.isLoading,
+    required this.error,
+    required this.onRefresh,
+  });
 
   @override
   State<DeleteTab> createState() => _DeleteTabState();
@@ -83,6 +92,14 @@ class _DeleteTabState extends State<DeleteTab> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.error.isNotEmpty) {
+      return ErrorView(
+        message: 'Lỗi nạp dữ liệu: ${widget.error}',
+        onRetry: widget.onRefresh,
+        isFullScreen: false,
+      );
+    }
+
     if (!_isAuthenticated) {
       return Center(
         child: InkWell(
@@ -105,9 +122,9 @@ class _DeleteTabState extends State<DeleteTab> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text("Đang xóa ảnh..."),
+            const PulseSkeleton(width: 80, height: 80),
+            const SizedBox(height: 16),
+            const Text("Đang xóa ảnh...", style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
       );
@@ -115,6 +132,8 @@ class _DeleteTabState extends State<DeleteTab> {
 
     return Column(
       children: [
+        if (widget.isLoading)
+          const LinearProgressIndicator(),
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: Text(
@@ -155,10 +174,13 @@ class _DeleteTabState extends State<DeleteTab> {
                       child: CachedNetworkImage(
                         imageUrl: img['download_url'],
                         fit: BoxFit.cover,
-                        placeholder: (context, url) => Shimmer.fromColors(
-                          baseColor: Colors.grey.withValues(alpha: 0.3),
-                          highlightColor: Colors.grey.withValues(alpha: 0.1),
-                          child: Container(color: Colors.white),
+                        memCacheWidth: (MediaQuery.of(context).size.width * 0.4).round(),
+                        placeholder: (context, url) => const PulseSkeleton(
+                          borderRadius: BorderRadius.all(Radius.circular(8)),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: Theme.of(context).colorScheme.errorContainer,
+                          child: const Icon(Icons.image_not_supported_rounded, size: 24),
                         ),
                       ),
                     ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../main.dart';
 import '../widgets/image_grid_item.dart';
+import '../widgets/error_view.dart';
 import '../utils/haptics.dart';
 
 class HomeTab extends StatefulWidget {
@@ -26,33 +27,17 @@ class HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   @override
-  bool get wantKeepAlive => true; 
+  bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
 
-    if (widget.isLoading) {
-      return const Align(
-        alignment: Alignment.bottomCenter,
-        child: LinearProgressIndicator(),
-      );
-    }
     if (widget.error.isNotEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Lỗi: ${widget.error}',
-              style: const TextStyle(color: Colors.red),
-            ),
-            ElevatedButton(
-              onPressed: widget.onRefresh,
-              child: const Text('Thử lại'),
-            ),
-          ],
-        ),
+      return ErrorView(
+        message: 'Lỗi: ${widget.error}',
+        onRetry: widget.onRefresh,
+        isFullScreen: false,
       );
     }
 
@@ -78,19 +63,16 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
             );
           },
         ),
-        Positioned(
-          right: 16,
-          bottom: 16,
-          child: FloatingActionButton(
-            onPressed: () {
-              AppHaptics.lightImpact();
-              widget.onRefresh();
-            },
-            backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-            foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
-            child: const Icon(Icons.cloud),
+        // Thanh loading duy nhất nằm ở cạnh dưới cho mọi trường hợp nạp dữ liệu
+        if (widget.isLoading)
+          const Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              child: LinearProgressIndicator(),
+            ),
           ),
-        ),
       ],
     );
   }
