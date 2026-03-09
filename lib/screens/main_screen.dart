@@ -241,6 +241,7 @@ class _MainScreenState extends State<MainScreen> {
               child: InkWell(
                 onLongPress: _showRefreshDialog,
                 onTap: () {
+                  AppHaptics.lightImpact();
                   // Giữ nguyên logic tap của NavigationBar
                   if (_selectedIndex != 0) {
                     setState(() => _selectedIndex = 0);
