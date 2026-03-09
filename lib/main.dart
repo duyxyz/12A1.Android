@@ -691,22 +691,22 @@ class _MainScreenState extends State<MainScreen> {
             NavigationDestination(
               selectedIcon: Icon(Icons.home),
               icon: Icon(Icons.home_outlined),
-              label: 'Home',
+              label: 'Trang chủ',
             ),
             NavigationDestination(
               selectedIcon: Icon(Icons.add_circle),
               icon: Icon(Icons.add_circle_outline),
-              label: 'Add',
+              label: 'Thêm',
             ),
             NavigationDestination(
               selectedIcon: Icon(Icons.delete),
               icon: Icon(Icons.delete_outline),
-              label: 'Delete',
+              label: 'Xóa',
             ),
             NavigationDestination(
               selectedIcon: Icon(Icons.settings),
               icon: Icon(Icons.settings_outlined),
-              label: 'Settings',
+              label: 'Cài đặt',
             ),
           ],
         ),
@@ -747,16 +747,9 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     super.build(context);
 
     if (widget.isLoading) {
-      return Center(
-        child: SizedBox(
-          width: 200,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const LinearProgressIndicator(borderRadius: BorderRadius.all(Radius.circular(4))),
-            ],
-          ),
-        ),
+      return const Align(
+        alignment: Alignment.bottomCenter,
+        child: LinearProgressIndicator(),
       );
     }
     if (widget.error.isNotEmpty) {
