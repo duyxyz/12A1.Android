@@ -250,9 +250,8 @@ class _SettingsTabState extends State<SettingsTab> {
                   child: _buildSystemCard(
                     context,
                     title: 'Rung',
-                    icon: MyApp.hapticNotifier.value
-                        ? Icons.vibration
-                        : Icons.vibration_outlined,
+                    activeIcon: Icons.vibration,
+                    inactiveIcon: Icons.vibration_outlined,
                     enabled: MyApp.hapticNotifier,
                     onChanged: (v) async {
                       MyApp.hapticNotifier.value = v;
@@ -267,9 +266,8 @@ class _SettingsTabState extends State<SettingsTab> {
                   child: _buildSystemCard(
                     context,
                     title: 'Khóa',
-                    icon: MyApp.lockNotifier.value
-                        ? Icons.lock
-                        : Icons.lock_outline,
+                    activeIcon: Icons.lock,
+                    inactiveIcon: Icons.lock_open_rounded,
                     enabled: MyApp.lockNotifier,
                     onChanged: (v) async {
                       MyApp.lockNotifier.value = v;
@@ -342,7 +340,7 @@ class _SettingsTabState extends State<SettingsTab> {
                       PopupMenuItem(value: 0, child: Text('Tự động')),
                       PopupMenuItem(value: 1, child: Text('Sáng')),
                       PopupMenuItem(value: 2, child: Text('Tối')),
-                      PopupMenuItem(value: 3, child: Text('OLED (Đen tuyệt đối)')),
+                      PopupMenuItem(value: 3, child: Text('OLED')),
                     ],
                     onChanged: (index) async {
                       MyApp.themeIndexNotifier.value = index;
@@ -383,7 +381,7 @@ class _SettingsTabState extends State<SettingsTab> {
                       'Đồng bộ kích thước',
                       style: TextStyle(fontSize: 14),
                     ),
-                    leading: const Icon(Icons.cloud_sync_rounded),
+                    leading: const Icon(Icons.straighten_rounded),
                     trailing: const Icon(
                       Icons.chevron_right_rounded,
                       color: Colors.grey,
@@ -500,7 +498,8 @@ class _SettingsTabState extends State<SettingsTab> {
   Widget _buildSystemCard(
     BuildContext context, {
     required String title,
-    required IconData icon,
+    required IconData activeIcon,
+    required IconData inactiveIcon,
     required ValueNotifier<bool> enabled,
     required Function(bool) onChanged,
   }) {
@@ -515,7 +514,7 @@ class _SettingsTabState extends State<SettingsTab> {
           child: Row(
             children: [
               Icon(
-                icon,
+                val ? activeIcon : inactiveIcon,
                 size: 20,
                 color: val ? Theme.of(context).colorScheme.primary : null,
               ),
@@ -646,6 +645,7 @@ class _SettingsTabState extends State<SettingsTab> {
                           final double dx = localOffset.dx - centerX;
                           final double dy = localOffset.dy - centerY;
                           double angle = atan2(dy, dx) * (180 / pi);
+                          angle = (angle + 90) % 360; // Correction
                           if (angle < 0) angle += 360;
                           setDialogState(() => hue = angle);
                         },
@@ -656,6 +656,7 @@ class _SettingsTabState extends State<SettingsTab> {
                           final double dx = localOffset.dx - centerX;
                           final double dy = localOffset.dy - centerY;
                           double angle = atan2(dy, dx) * (180 / pi);
+                          angle = (angle + 90) % 360; // Correction
                           if (angle < 0) angle += 360;
                           setDialogState(() => hue = angle);
                         },
