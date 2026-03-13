@@ -61,10 +61,10 @@ class MyApp extends StatelessWidget {
                 return MaterialApp(
                   title: '12A1 THPT Đơn Dương',
                   scrollBehavior: NoStretchScrollBehavior(),
-                  platform: currentPlatform, // Direct platform override
                   theme: ThemeData(
                     colorScheme: ColorScheme.fromSeed(seedColor: currentColor),
                     useMaterial3: true,
+                    platform: currentPlatform, // Override here
                   ),
                   darkTheme: ThemeData(
                     colorScheme: ColorScheme.fromSeed(
@@ -72,6 +72,7 @@ class MyApp extends StatelessWidget {
                       brightness: Brightness.dark,
                     ),
                     useMaterial3: true,
+                    platform: currentPlatform, // And here
                   ),
                   themeMode: currentMode,
                   themeAnimationDuration: const Duration(milliseconds: 500),
