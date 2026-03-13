@@ -238,6 +238,9 @@ class _SettingsTabState extends State<SettingsTab> {
               ],
             ),
 
+            const SizedBox(height: 10),
+
+
             const SizedBox(height: 12),
 
             // --- Cụm Hệ thống (Hàng 2 - Grid 2 Ô) ---
@@ -330,33 +333,33 @@ class _SettingsTabState extends State<SettingsTab> {
               color: Theme.of(context).colorScheme.surfaceContainerLow,
               child: Column(
                 children: [
-                  _buildDropdownTile<ThemeMode>(
+                  _buildDropdownTile<int>(
                     context,
                     title: 'Chế độ màn hình',
                     icon: Icons.brightness_6_rounded,
-                    value: MyApp.themeNotifier,
+                    value: MyApp.themeIndexNotifier,
                     items: const [
-                      PopupMenuItem(
-                        value: ThemeMode.system,
-                        child: Text('Tự động'),
-                      ),
-                      PopupMenuItem(
-                        value: ThemeMode.light,
-                        child: Text('Sáng'),
-                      ),
-                      PopupMenuItem(value: ThemeMode.dark, child: Text('Tối')),
+                      PopupMenuItem(value: 0, child: Text('Tự động')),
+                      PopupMenuItem(value: 1, child: Text('Sáng')),
+                      PopupMenuItem(value: 2, child: Text('Tối')),
+                      PopupMenuItem(value: 3, child: Text('OLED (Đen tuyệt đối)')),
                     ],
-                    onChanged: (mode) async {
-                      MyApp.themeNotifier.value = mode;
+                    onChanged: (index) async {
+                      MyApp.themeIndexNotifier.value = index;
                       final prefs = await SharedPreferences.getInstance();
-                      await prefs.setInt('themeMode', mode.index);
+                      await prefs.setInt('themeMode', index);
                       AppHaptics.selectionClick();
                     },
-                    displayLabel: (mode) => mode == ThemeMode.system
-                        ? 'Tự động'
-                        : (mode == ThemeMode.light ? 'Sáng' : 'Tối'),
+                    displayLabel: (index) {
+                      switch (index) {
+                        case 0: return 'Tự động';
+                        case 1: return 'Sáng';
+                        case 2: return 'Tối';
+                        case 3: return 'OLED';
+                        default: return 'Tự động';
+                      }
+                    },
                   ),
-                  const Divider(height: 1, indent: 16, endIndent: 16),
                   _buildDropdownTile<int>(
                     context,
                     title: 'Bố cục lưới ảnh',
@@ -375,48 +378,12 @@ class _SettingsTabState extends State<SettingsTab> {
                     },
                     displayLabel: (cols) => '$cols Cột',
                   ),
-                  const Divider(height: 1, indent: 16, endIndent: 16),
-                  _buildDropdownTile<TargetPlatform?>(
-                    context,
-                    title: 'Giao diện hệ thống',
-                    icon: Icons.phone_android_rounded,
-                    value: MyApp.platformNotifier,
-                    items: const [
-                      PopupMenuItem(value: null, child: Text('Mặc định')),
-                      PopupMenuItem(
-                        value: TargetPlatform.android,
-                        child: Text('Android'),
-                      ),
-                      PopupMenuItem(
-                        value: TargetPlatform.iOS,
-                        child: Text('iOS'),
-                      ),
-                    ],
-                    onChanged: (val) async {
-                      MyApp.platformNotifier.value = val;
-                      final prefs = await SharedPreferences.getInstance();
-                      if (val == null) {
-                        await prefs.remove('targetPlatform');
-                      } else {
-                        await prefs.setInt(
-                          'targetPlatform',
-                          TargetPlatform.values.indexOf(val),
-                        );
-                      }
-                      AppHaptics.selectionClick();
-                    },
-                    displayLabel: (val) {
-                      if (val == null) return 'Mặc định';
-                      return val == TargetPlatform.iOS ? 'iOS' : 'Android';
-                    },
-                  ),
-                  const Divider(height: 1, indent: 16, endIndent: 16),
                   ListTile(
                     title: const Text(
                       'Đồng bộ kích thước',
                       style: TextStyle(fontSize: 14),
                     ),
-                    leading: const Icon(Icons.sync_rounded),
+                    leading: const Icon(Icons.cloud_sync_rounded),
                     trailing: const Icon(
                       Icons.chevron_right_rounded,
                       color: Colors.grey,
@@ -588,50 +555,52 @@ class _SettingsTabState extends State<SettingsTab> {
       builder: (context, current, _) => ListTile(
         title: Text(title, style: const TextStyle(fontSize: 14)),
         leading: Icon(icon),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                displayLabel(current),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
+        trailing: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () {
+            final RenderBox button = context.findRenderObject() as RenderBox;
+            final RenderBox overlay =
+                Overlay.of(context).context.findRenderObject() as RenderBox;
+            final RelativeRect position = RelativeRect.fromRect(
+              Rect.fromPoints(
+                button.localToGlobal(
+                  button.size.bottomRight(Offset.zero),
+                  ancestor: overlay,
+                ),
+                button.localToGlobal(
+                  button.size.bottomRight(Offset.zero),
+                  ancestor: overlay,
                 ),
               ),
-              const SizedBox(width: 4),
-              const Icon(Icons.keyboard_arrow_down_rounded, size: 18),
-            ],
+              Offset.zero & overlay.size,
+            );
+            showMenu<T>(context: context, position: position, items: items)
+                .then((val) {
+              if (val != null) onChanged(val);
+            });
+          },
+          child: Ink(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  displayLabel(current),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.keyboard_arrow_down_rounded, size: 18),
+              ],
+            ),
           ),
         ),
-        onTap: () {
-          final RenderBox button = context.findRenderObject() as RenderBox;
-          final RenderBox overlay =
-              Overlay.of(context).context.findRenderObject() as RenderBox;
-          final RelativeRect position = RelativeRect.fromRect(
-            Rect.fromPoints(
-              button.localToGlobal(
-                button.size.bottomRight(Offset.zero),
-                ancestor: overlay,
-              ),
-              button.localToGlobal(
-                button.size.bottomRight(Offset.zero),
-                ancestor: overlay,
-              ),
-            ),
-            Offset.zero & overlay.size,
-          );
-          showMenu<T>(context: context, position: position, items: items).then((
-            val,
-          ) {
-            if (val != null) onChanged(val);
-          });
-        },
       ),
     );
   }
@@ -702,7 +671,7 @@ class _SettingsTabState extends State<SettingsTab> {
                       // Selector Indicator
                       IgnorePointer(
                         child: Transform.rotate(
-                          angle: hue * (pi / 180),
+                          angle: (hue - 90) * (pi / 180),
                           child: Stack(
                             children: [
                               // logic marker
@@ -806,12 +775,12 @@ class ColorWheelPainter extends CustomPainter {
       final paint = Paint()
         ..color = HSVColor.fromAHSV(1.0, i.toDouble(), 0.8, 0.9).toColor()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 30; // Thickness of the wheel ring
-
+        ..strokeWidth = 40; // Thick enough to be easy to tap
+      
       canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius - 15),
-        i * (pi / 180),
-        sweepAngle + 0.01, // Overlap slightly to prevent gaps
+        Rect.fromCircle(center: center, radius: radius - 20),
+        (i - 90) * (pi / 180), // Offset by -90 to match atan2 behavior
+        sweepAngle + 0.02,
         false,
         paint,
       );

@@ -268,7 +268,7 @@ class _MainScreenState extends State<MainScreen> {
         ),
         extendBody: false,
         bottomNavigationBar: NavigationBar(
-          height: 58.0,
+          height: 52.0,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
           selectedIndex: _selectedIndex,
           onDestinationSelected: (int index) {
