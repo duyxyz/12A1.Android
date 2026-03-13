@@ -41,6 +41,7 @@ class _MainScreenState extends State<MainScreen> {
     _loadData();
     _setupRealtimeMetadata();
     _checkForUpdateSilent();
+    cleanupUpdateFiles(); // Dọn dẹp file APK cũ
   }
 
   void _setupRealtimeMetadata() {

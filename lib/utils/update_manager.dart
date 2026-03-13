@@ -110,3 +110,25 @@ Future<void> startUpdateProcess(BuildContext context, Map<String, dynamic> updat
     }
   }
 }
+
+/// Xoá bỏ các file APK thừa trong bộ nhớ tạm để tiết kiệm dung lượng
+Future<void> cleanupUpdateFiles() async {
+  try {
+    final tempDir = await getTemporaryDirectory();
+    if (!tempDir.existsSync()) return;
+
+    final List<FileSystemEntity> files = tempDir.listSync();
+    for (final file in files) {
+      if (file is File && file.path.endsWith('.apk')) {
+        try {
+          await file.delete();
+          debugPrint("Đã xoá file update cũ: ${file.path}");
+        } catch (e) {
+          debugPrint("Không thể xoá file ${file.path}: $e");
+        }
+      }
+    }
+  } catch (e) {
+    debugPrint("Lỗi khi dọn dẹp file update: $e");
+  }
+}
