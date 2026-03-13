@@ -269,143 +269,147 @@ class _MainScreenState extends State<MainScreen> {
         extendBody: true, // Cho phép nội dung body tràn xuống dưới thanh điều hướng để thấy hiệu ứng blur
         bottomNavigationBar: ClipRect(
           child: BackdropFilter(
-            filter: ColorFilter.mode(
-              Colors.black.withOpacity(0.1),
-              BlendMode.darken,
-            ),
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-              child: Container(
-                color: Colors.black.withOpacity(0.5),
-                child: Stack(
-                  children: [
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        splashFactory: NoSplash.splashFactory,
-                        highlightColor: Colors.transparent,
-                        splashColor: Colors.transparent,
-                        hoverColor: Colors.transparent,
-                        navigationBarTheme: NavigationBarThemeData(
-                          backgroundColor: Colors.transparent,
-                          indicatorColor: Colors.transparent,
-                          labelTextStyle: WidgetStateProperty.resolveWith((states) {
-                            if (states.contains(WidgetState.selected)) {
-                              return const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                height: 1.0,
-                              );
-                            }
-                            return const TextStyle(
-                              fontSize: 11,
-                              color: Colors.white70,
-                              height: 1.0,
-                            );
-                          }),
-                          iconTheme: WidgetStateProperty.resolveWith((states) {
-                            if (states.contains(WidgetState.selected)) {
-                              return const IconThemeData(size: 28, color: Colors.white);
-                            }
-                            return const IconThemeData(size: 28, color: Colors.white70);
-                          }),
-                        ),
-                      ),
-                      child: NavigationBar(
-                        height: 60, // Tăng nhẹ để icon 28 trông thoáng hơn
+            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10), // YouTube-style subtle blur
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.7), // Nền tối hơn chuẩn YouTube
+                border: Border(
+                  top: BorderSide(
+                    color: Colors.white.withOpacity(0.1), // Đường kẻ mảnh phía trên
+                    width: 0.5,
+                  ),
+                ),
+              ),
+              child: Stack(
+                children: [
+                  Theme(
+                    data: Theme.of(context).copyWith(
+                      splashFactory: NoSplash.splashFactory,
+                      highlightColor: Colors.transparent,
+                      splashColor: Colors.transparent,
+                      hoverColor: Colors.transparent,
+                      navigationBarTheme: NavigationBarThemeData(
                         backgroundColor: Colors.transparent,
                         indicatorColor: Colors.transparent,
-                        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-                        selectedIndex: _selectedIndex,
-                        onDestinationSelected: (int index) {
-                          if (_selectedIndex == 0 && index == 0) {
-                            if (_homeScrollController.hasClients) {
-                              _homeScrollController.animateTo(
-                                0,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOut,
-                              );
-                            }
+                        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                          if (states.contains(WidgetState.selected)) {
+                            return const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              height: 1.0,
+                            );
                           }
-                          AppHaptics.lightImpact();
-                          setState(() {
-                            _selectedIndex = index;
-                          });
-                        },
-                        destinations: <NavigationDestination>[
-                          NavigationDestination(
-                            selectedIcon: Transform.translate(
-                              offset: const Offset(0, 2),
-                              child: const Icon(Icons.home),
-                            ),
-                            icon: Transform.translate(
-                              offset: const Offset(0, 2),
-                              child: const Icon(Icons.home_outlined),
-                            ),
-                            label: 'Trang chủ',
-                          ),
-                          NavigationDestination(
-                            selectedIcon: Transform.translate(
-                              offset: const Offset(0, 2),
-                              child: const Icon(Icons.add_circle),
-                            ),
-                            icon: Transform.translate(
-                              offset: const Offset(0, 2),
-                              child: const Icon(Icons.add_circle_outline),
-                            ),
-                            label: 'Thêm',
-                          ),
-                          NavigationDestination(
-                            selectedIcon: Transform.translate(
-                              offset: const Offset(0, 2),
-                              child: const Icon(Icons.delete),
-                            ),
-                            icon: Transform.translate(
-                              offset: const Offset(0, 2),
-                              child: const Icon(Icons.delete_outline),
-                            ),
-                            label: 'Xóa',
-                          ),
-                          NavigationDestination(
-                            selectedIcon: Transform.translate(
-                              offset: const Offset(0, 2),
-                              child: const Icon(Icons.settings),
-                            ),
-                            icon: Transform.translate(
-                              offset: const Offset(0, 2),
-                              child: const Icon(Icons.settings_outlined),
-                            ),
-                            label: 'Cài đặt',
-                          ),
-                        ],
+                          return TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[400], // Màu xám unselected chuẩn YouTube
+                            height: 1.0,
+                          );
+                        }),
+                        iconTheme: WidgetStateProperty.resolveWith((states) {
+                          if (states.contains(WidgetState.selected)) {
+                            return const IconThemeData(size: 26, color: Colors.white);
+                          }
+                          return IconThemeData(size: 26, color: Colors.grey[400]);
+                        }),
                       ),
                     ),
-                    // Lớp phủ trong suốt để bắt sự kiện Long Press vào nút Trang chủ
-                    Positioned(
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: MediaQuery.of(context).size.width / 4,
-                      child: InkWell(
-                        onLongPress: _showRefreshDialog,
-                        onTap: () {
-                          AppHaptics.lightImpact();
-                          if (_selectedIndex != 0) {
-                            setState(() => _selectedIndex = 0);
-                          } else {
-                            if (_homeScrollController.hasClients) {
-                              _homeScrollController.animateTo(
-                                0,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOut,
-                              );
-                            }
+                    child: NavigationBar(
+                      height: 58, // Tối ưu chiều cao cho phong cách YouTube
+                      backgroundColor: Colors.transparent,
+                      indicatorColor: Colors.transparent,
+                      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                      selectedIndex: _selectedIndex,
+                      onDestinationSelected: (int index) {
+                        if (_selectedIndex == 0 && index == 0) {
+                          if (_homeScrollController.hasClients) {
+                            _homeScrollController.animateTo(
+                              0,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOut,
+                            );
                           }
-                        },
-                      ),
+                        }
+                        AppHaptics.lightImpact();
+                        setState(() {
+                          _selectedIndex = index;
+                        });
+                      },
+                      destinations: <NavigationDestination>[
+                        NavigationDestination(
+                          selectedIcon: Transform.translate(
+                            offset: const Offset(0, 2),
+                            child: const Icon(Icons.home),
+                          ),
+                          icon: Transform.translate(
+                            offset: const Offset(0, 2),
+                            child: const Icon(Icons.home_outlined),
+                          ),
+                          label: 'Trang chủ',
+                        ),
+                        NavigationDestination(
+                          selectedIcon: Transform.translate(
+                            offset: const Offset(0, 2),
+                            child: const Icon(Icons.add_circle),
+                          ),
+                          icon: Transform.translate(
+                            offset: const Offset(0, 2),
+                            child: const Icon(Icons.add_circle_outline),
+                          ),
+                          label: 'Thêm',
+                        ),
+                        NavigationDestination(
+                          selectedIcon: Transform.translate(
+                            offset: const Offset(0, 2),
+                            child: const Icon(Icons.delete),
+                          ),
+                          icon: Transform.translate(
+                            offset: const Offset(0, 2),
+                            child: const Icon(Icons.delete_outline),
+                          ),
+                          label: 'Xóa',
+                        ),
+                        NavigationDestination(
+                          selectedIcon: Transform.translate(
+                            offset: const Offset(0, 2),
+                            child: const Icon(Icons.settings),
+                          ),
+                          icon: Transform.translate(
+                            offset: const Offset(0, 2),
+                            child: const Icon(Icons.settings_outlined),
+                          ),
+                          label: 'Cài đặt',
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  // Lớp phủ tàng hình cho nút Trang chủ
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: MediaQuery.of(context).size.width / 4,
+                    child: InkWell(
+                      splashColor: Colors.transparent,
+                      highlightColor: Colors.transparent,
+                      onLongPress: _showRefreshDialog,
+                      onTap: () {
+                        AppHaptics.lightImpact();
+                        if (_selectedIndex != 0) {
+                          setState(() => _selectedIndex = 0);
+                        } else {
+                          if (_homeScrollController.hasClients) {
+                            _homeScrollController.animateTo(
+                              0,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOut,
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
