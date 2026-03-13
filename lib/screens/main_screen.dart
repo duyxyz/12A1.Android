@@ -81,10 +81,14 @@ class _MainScreenState extends State<MainScreen> {
             // Chỉ tải lại từ GitHub nếu số lượng ảnh thực sự thay đổi
             // (Xử lý trường hợp thêm/xóa ảnh)
             if (data.length != _images.length) {
-              debugPrint("Phát hiện thay đổi số lượng ảnh (${_images.length} -> ${data.length}), đang tải lại...");
+              debugPrint(
+                "Phát hiện thay đổi số lượng ảnh (${_images.length} -> ${data.length}), đang tải lại...",
+              );
               _loadData();
             } else {
-              debugPrint("Số lượng ảnh không đổi (${data.length}), bỏ qua việc tải lại từ GitHub.");
+              debugPrint(
+                "Số lượng ảnh không đổi (${data.length}), bỏ qua việc tải lại từ GitHub.",
+              );
             }
           }
         });
@@ -273,14 +277,15 @@ class _MainScreenState extends State<MainScreen> {
                   labelTextStyle: WidgetStateProperty.resolveWith((states) {
                     if (states.contains(WidgetState.selected)) {
                       return const TextStyle(
-                        fontSize: 11,
+                        fontSize: 10,
                         fontWeight: FontWeight.bold,
+                        height: 0.5,
                       );
                     }
-                    return const TextStyle(fontSize: 11);
+                    return const TextStyle(fontSize: 10, height: 0.5);
                   }),
                   iconTheme: WidgetStateProperty.resolveWith((states) {
-                    return const IconThemeData(size: 25);
+                    return const IconThemeData(size: 24);
                   }),
                 ),
               ),
@@ -303,25 +308,49 @@ class _MainScreenState extends State<MainScreen> {
                     _selectedIndex = index;
                   });
                 },
-                destinations: const <NavigationDestination>[
+                destinations: <NavigationDestination>[
                   NavigationDestination(
-                    selectedIcon: Icon(Icons.home),
-                    icon: Icon(Icons.home_outlined),
+                    selectedIcon: Transform.translate(
+                      offset: const Offset(0, 4),
+                      child: const Icon(Icons.home),
+                    ),
+                    icon: Transform.translate(
+                      offset: const Offset(0, 4),
+                      child: const Icon(Icons.home_outlined),
+                    ),
                     label: 'Trang chủ',
                   ),
                   NavigationDestination(
-                    selectedIcon: Icon(Icons.add_circle),
-                    icon: Icon(Icons.add_circle_outline),
+                    selectedIcon: Transform.translate(
+                      offset: const Offset(0, 4),
+                      child: const Icon(Icons.add_circle),
+                    ),
+                    icon: Transform.translate(
+                      offset: const Offset(0, 4),
+                      child: const Icon(Icons.add_circle_outline),
+                    ),
                     label: 'Thêm',
                   ),
                   NavigationDestination(
-                    selectedIcon: Icon(Icons.delete),
-                    icon: Icon(Icons.delete_outline),
+                    selectedIcon: Transform.translate(
+                      offset: const Offset(0, 4),
+                      child: const Icon(Icons.delete),
+                    ),
+                    icon: Transform.translate(
+                      offset: const Offset(0, 4),
+                      child: const Icon(Icons.delete_outline),
+                    ),
                     label: 'Xóa',
                   ),
                   NavigationDestination(
-                    selectedIcon: Icon(Icons.settings),
-                    icon: Icon(Icons.settings_outlined),
+                    selectedIcon: Transform.translate(
+                      offset: const Offset(0, 4),
+                      child: const Icon(Icons.settings),
+                    ),
+                    icon: Transform.translate(
+                      offset: const Offset(0, 4),
+                      child: const Icon(Icons.settings_outlined),
+                    ),
                     label: 'Cài đặt',
                   ),
                 ],
