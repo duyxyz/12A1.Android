@@ -327,52 +327,93 @@ class _SettingsTabState extends State<SettingsTab> {
                     ),
                   ),
                 ),
-                // Đồng bộ
+                // Màu sắc
                 Card(
                   elevation: 0,
                   margin: EdgeInsets.zero,
                   color: Theme.of(context).colorScheme.surfaceContainerLow,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () async {
-                      AppHaptics.lightImpact();
-                      final now = DateTime.now();
-                      if (_lastTapTime == null || now.difference(_lastTapTime!) > const Duration(milliseconds: 500)) {
-                        _syncTapCount = 1;
-                      } else {
-                        _syncTapCount++;
-                      }
-                      _lastTapTime = now;
-                      if (_syncTapCount < 5) return;
-                      _syncTapCount = 0;
-                      AppHaptics.mediumImpact();
-                      // Migration logic...
-                      final bool? confirmSync = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Đồng bộ dữ liệu?'),
-                          content: const Text('Bắt đầu đồng bộ kích thước từ GitHub sang Supabase?'),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
-                            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Đồng ý')),
+                  child: ValueListenableBuilder<Color>(
+                    valueListenable: MyApp.themeColorNotifier,
+                    builder: (context, currentColor, _) => InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        AppHaptics.selectionClick();
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            HSVColor hsv = HSVColor.fromColor(currentColor);
+                            double hue = hsv.hue;
+                            double saturation = hsv.saturation;
+                            double value = hsv.value;
+                            return StatefulBuilder(
+                              builder: (context, setDialogState) {
+                                return AlertDialog(
+                                  title: const Text('Chọn màu chủ đạo'),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        height: 80,
+                                        margin: const EdgeInsets.only(bottom: 24),
+                                        decoration: BoxDecoration(
+                                          color: HSVColor.fromAHSV(1.0, hue, saturation, value).toColor(),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                                        ),
+                                        child: const Center(
+                                          child: Text('Màu đã chọn', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, shadows: [Shadow(blurRadius: 4)]))),
+                                      ),
+                                      const Text('Tông màu (Hue)', style: TextStyle(fontSize: 12)),
+                                      Slider(
+                                        value: hue, max: 360, divisions: 360,
+                                        activeColor: HSVColor.fromAHSV(1.0, hue, 1.0, 1.0).toColor(),
+                                        onChanged: (v) => setDialogState(() => hue = v),
+                                      ),
+                                      const Text('Độ đậm (Saturation)', style: TextStyle(fontSize: 12)),
+                                      Slider(
+                                        value: saturation,
+                                        activeColor: currentColor.withValues(alpha: saturation),
+                                        onChanged: (v) => setDialogState(() => saturation = v),
+                                      ),
+                                      const Text('Độ sáng (Brightness)', style: TextStyle(fontSize: 12)),
+                                      Slider(
+                                        value: value,
+                                        activeColor: Colors.grey.withValues(alpha: value),
+                                        onChanged: (v) => setDialogState(() => value = v),
+                                      ),
+                                    ],
+                                  ),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+                                    FilledButton(
+                                      onPressed: () async {
+                                        final newColor = HSVColor.fromAHSV(1.0, hue, saturation, value).toColor();
+                                        MyApp.themeColorNotifier.value = newColor;
+                                        final prefs = await SharedPreferences.getInstance();
+                                        await prefs.setInt('themeColor', newColor.value);
+                                        if (context.mounted) Navigator.pop(context);
+                                        AppHaptics.mediumImpact();
+                                      },
+                                      child: const Text('Lưu màu'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                      child: Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.palette_outlined, size: 20),
+                            const SizedBox(width: 8),
+                            const Text('Màu sắc', style: TextStyle(fontSize: 13)),
+                            const SizedBox(width: 8),
+                            Container(width: 12, height: 12, decoration: BoxDecoration(color: currentColor, shape: BoxShape.circle)),
                           ],
                         ),
-                      );
-                      if (confirmSync != true) return;
-                      if (!SupabaseService.isInitialized) return;
-                      showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
-                      final result = await MigrationUtility.migrateFromGitHub();
-                      Navigator.pop(context);
-                      showDialog(context: context, builder: (_) => AlertDialog(title: const Text('Kết quả'), content: Text(result), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Đóng'))]));
-                    },
-                    child: const Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.sync_rounded, size: 20),
-                          SizedBox(width: 8),
-                          Text('Đồng bộ', style: TextStyle(fontSize: 13)),
-                        ],
                       ),
                     ),
                   ),
@@ -399,9 +440,18 @@ class _SettingsTabState extends State<SettingsTab> {
                         trailing: SegmentedButton<ThemeMode>(
                           showSelectedIcon: false,
                           segments: const [
-                            ButtonSegment(value: ThemeMode.system, icon: Icon(Icons.brightness_auto, size: 18)),
-                            ButtonSegment(value: ThemeMode.light, icon: Icon(Icons.wb_sunny_rounded, size: 18)),
-                            ButtonSegment(value: ThemeMode.dark, icon: Icon(Icons.nightlight_round, size: 18)),
+                            ButtonSegment(
+                              value: ThemeMode.system,
+                              icon: Icon(Icons.brightness_auto),
+                            ),
+                            ButtonSegment(
+                              value: ThemeMode.light,
+                              icon: Icon(Icons.wb_sunny_rounded),
+                            ),
+                            ButtonSegment(
+                              value: ThemeMode.dark,
+                              icon: Icon(Icons.nightlight_round),
+                            ),
                           ],
                           selected: {currentMode},
                           onSelectionChanged: (newSelection) async {
@@ -424,9 +474,9 @@ class _SettingsTabState extends State<SettingsTab> {
                         trailing: SegmentedButton<int>(
                           showSelectedIcon: false,
                           segments: const [
-                            ButtonSegment(value: 1, label: Text('1', style: TextStyle(fontSize: 12))),
-                            ButtonSegment(value: 2, label: Text('2', style: TextStyle(fontSize: 12))),
-                            ButtonSegment(value: 3, label: Text('3', style: TextStyle(fontSize: 12))),
+                            ButtonSegment(value: 1, label: Text('1')),
+                            ButtonSegment(value: 2, label: Text('2')),
+                            ButtonSegment(value: 3, label: Text('3')),
                           ],
                           selected: {gridCols},
                           onSelectionChanged: (newSelection) async {
@@ -440,60 +490,42 @@ class _SettingsTabState extends State<SettingsTab> {
                       ),
                     ),
                     const Divider(height: 1, indent: 16, endIndent: 16),
-                    ValueListenableBuilder<Color>(
-                      valueListenable: MyApp.themeColorNotifier,
-                      builder: (context, currentColor, _) => ListTile(
+                    ValueListenableBuilder<String>(
+                      valueListenable: GithubService.apiRemaining, // Dummy check, we just want standard look
+                      builder: (context, _, __) => ListTile(
                         dense: true,
                         visualDensity: VisualDensity.compact,
-                        title: const Text('Màu sắc chủ đạo', style: TextStyle(fontSize: 13)),
-                        trailing: Material(
-                          color: currentColor,
-                          shape: const CircleBorder(),
-                          child: const SizedBox(width: 28, height: 28),
-                        ),
-                        onTap: () {
-                          AppHaptics.selectionClick();
-                          showDialog(
+                        title: const Text('Đồng bộ kích thước', style: TextStyle(fontSize: 13)),
+                        leading: const Icon(Icons.sync_rounded, size: 20),
+                        onTap: () async {
+                          AppHaptics.lightImpact();
+                          final now = DateTime.now();
+                          if (_lastTapTime == null || now.difference(_lastTapTime!) > const Duration(milliseconds: 500)) {
+                            _syncTapCount = 1;
+                          } else {
+                            _syncTapCount++;
+                          }
+                          _lastTapTime = now;
+                          if (_syncTapCount < 5) return;
+                          _syncTapCount = 0;
+                          AppHaptics.mediumImpact();
+                          final bool? confirmSync = await showDialog<bool>(
                             context: context,
-                            builder: (context) {
-                              final List<Color> extendedColors = [
-                                Colors.red, Colors.redAccent, Colors.pink, Colors.pinkAccent,
-                                Colors.purple, Colors.deepPurple, Colors.indigo, Colors.blue,
-                                Colors.lightBlue, Colors.cyan, Colors.teal, Colors.green,
-                                Colors.lightGreen, Colors.lime, Colors.yellow, Colors.amber,
-                                Colors.orange, Colors.deepOrange, Colors.brown, Colors.grey,
-                                Colors.blueGrey, const Color(0xFF1E88E5), const Color(0xFF00897B), const Color(0xFFD81B60),
-                              ];
-                              return AlertDialog(
-                                title: const Text('Chọn màu chủ đạo'),
-                                content: SizedBox(
-                                  width: double.maxFinite,
-                                  child: GridView.builder(
-                                    shrinkWrap: true,
-                                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6, crossAxisSpacing: 12, mainAxisSpacing: 12),
-                                    itemCount: extendedColors.length,
-                                    itemBuilder: (context, index) {
-                                      final color = extendedColors[index];
-                                      final isSelected = currentColor.value == color.value;
-                                      return GestureDetector(
-                                        onTap: () async {
-                                          AppHaptics.selectionClick();
-                                          MyApp.themeColorNotifier.value = color;
-                                          final prefs = await SharedPreferences.getInstance();
-                                          await prefs.setInt('themeColor', color.value);
-                                          Navigator.pop(context);
-                                        },
-                                        child: Container(
-                                          decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: isSelected ? Border.all(color: Theme.of(context).colorScheme.onSurface, width: 3) : null),
-                                          child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 20) : null,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              );
-                            },
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Xác nhận đồng bộ?'),
+                              content: const Text('Bắt đầu đồng bộ kích thước từ GitHub sang Supabase?'),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+                                FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Đồng ý')),
+                              ],
+                            ),
                           );
+                          if (confirmSync != true) return;
+                          if (!SupabaseService.isInitialized) return;
+                          showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+                          final result = await MigrationUtility.migrateFromGitHub();
+                          Navigator.pop(context);
+                          showDialog(context: context, builder: (_) => AlertDialog(title: const Text('Kết quả đồng bộ'), content: Text(result), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Đóng'))]));
                         },
                       ),
                     ),
