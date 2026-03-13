@@ -257,6 +257,8 @@ class _MainScreenState extends State<MainScreen> {
         bottomNavigationBar: Stack(
           children: [
             NavigationBar(
+              height: 65,
+              indicatorColor: Colors.transparent,
               selectedIndex: _selectedIndex,
               onDestinationSelected: (int index) {
                 if (_selectedIndex == 0 && index == 0) {
