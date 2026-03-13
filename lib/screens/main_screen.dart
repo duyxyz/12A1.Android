@@ -78,9 +78,14 @@ class _MainScreenState extends State<MainScreen> {
         _debounceTimer?.cancel();
         _debounceTimer = Timer(const Duration(seconds: 3), () {
           if (mounted) {
-            // Kiểm tra xem số lượng ảnh có khớp không, nếu không khớp thì load lại
-            // (Số lượng ảnh thực tế từ GitHub có thể khác với Supabase lúc đang đồng bộ)
-            _loadData();
+            // Chỉ tải lại từ GitHub nếu số lượng ảnh thực sự thay đổi
+            // (Xử lý trường hợp thêm/xóa ảnh)
+            if (data.length != _images.length) {
+              debugPrint("Phát hiện thay đổi số lượng ảnh (${_images.length} -> ${data.length}), đang tải lại...");
+              _loadData();
+            } else {
+              debugPrint("Số lượng ảnh không đổi (${data.length}), bỏ qua việc tải lại từ GitHub.");
+            }
           }
         });
       }
