@@ -304,8 +304,8 @@ class _MainScreenState extends State<MainScreen> {
                   icon: Icon(Icons.settings_outlined),
                   label: 'Cài đặt',
                 ),
-                ),
-              ),
+              ],
+            ),
             ),
             // Lớp phủ trong suốt để bắt sự kiện Long Press vào nút Trang chủ
             Positioned(
