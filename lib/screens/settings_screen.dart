@@ -12,15 +12,14 @@ import '../utils/update_manager.dart';
 import '../utils/migrate_to_supabase.dart';
 import '../services/supabase_service.dart';
 
-class SettingsTab extends StatefulWidget {
-  final bool isSelected;
-  const SettingsTab({super.key, this.isSelected = false});
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
 
   @override
-  State<SettingsTab> createState() => _SettingsTabState();
+  State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsTabState extends State<SettingsTab> {
+class _SettingsScreenState extends State<SettingsScreen> {
   String _cacheSize = 'Đang tính...';
   int _syncTapCount = 0;
   DateTime? _lastTapTime;
@@ -29,14 +28,6 @@ class _SettingsTabState extends State<SettingsTab> {
   void initState() {
     super.initState();
     _calculateCacheSize();
-  }
-
-  @override
-  void didUpdateWidget(covariant SettingsTab oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isSelected && !oldWidget.isSelected) {
-      _calculateCacheSize();
-    }
   }
 
   Future<void> _calculateCacheSize() async {
@@ -152,49 +143,29 @@ class _SettingsTabState extends State<SettingsTab> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return SingleChildScrollView(
-      physics: const ClampingScrollPhysics(),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Hàng thông tin nhanh ──
-            Row(
-              children: [
-                Expanded(
-                  child: _QuickInfoCard(
-                    icon: Icons.api_rounded,
-                    label: 'API',
-                    child: ValueListenableBuilder<String>(
-                      valueListenable: GithubService.apiRemaining,
-                      builder: (_, remaining, __) => Text(
-                        remaining,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () async {
-                      final info = await PackageInfo.fromPlatform();
-                      if (context.mounted) {
-                        _manualUpdateCheck(context, info.version);
-                      }
-                    },
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Cài đặt', style: TextStyle(fontWeight: FontWeight.w600)),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Hàng thông tin nhanh ──
+              Row(
+                children: [
+                  Expanded(
                     child: _QuickInfoCard(
-                      icon: Icons.system_update_outlined,
-                      label: 'Phiên bản',
-                      child: FutureBuilder<PackageInfo>(
-                        future: PackageInfo.fromPlatform(),
-                        builder: (_, snapshot) => Text(
-                          'v${snapshot.data?.version ?? "..."}',
+                      icon: Icons.api_rounded,
+                      label: 'API',
+                      child: ValueListenableBuilder<String>(
+                        valueListenable: GithubService.apiRemaining,
+                        builder: (_, remaining, __) => Text(
+                          remaining,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -204,259 +175,290 @@ class _SettingsTabState extends State<SettingsTab> {
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () async {
-                      AppHaptics.mediumImpact();
-                      await DefaultCacheManager().emptyCache();
-                      final dirs = [
-                        await getTemporaryDirectory(),
-                        await getApplicationSupportDirectory(),
-                      ];
-                      for (final dir in dirs) {
-                        if (dir.existsSync()) {
-                          for (final entity
-                              in dir.listSync(recursive: true)) {
-                            if (entity is File) {
-                              try {
-                                await entity.delete();
-                              } catch (_) {}
-                            }
-                          }
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () async {
+                        final info = await PackageInfo.fromPlatform();
+                        if (context.mounted) {
+                          _manualUpdateCheck(context, info.version);
                         }
-                      }
-                      await Future.delayed(
-                          const Duration(milliseconds: 400));
-                      await _calculateCacheSize();
-                    },
-                    child: _QuickInfoCard(
-                      icon: Icons.cleaning_services_rounded,
-                      label: 'Bộ nhớ',
-                      child: Text(
-                        _cacheSize,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            // ── Section: Giao diện & Hiển thị ──
-            _SectionHeader(title: 'Giao diện'),
-            const SizedBox(height: 6),
-            _SettingsCard(
-              children: [
-                // Chế độ màn hình
-                _DropdownSettingsTile<int>(
-                  icon: Icons.brightness_6_rounded,
-                  title: 'Chế độ màn hình',
-                  valueNotifier: MyApp.themeIndexNotifier,
-                  items: const [
-                    PopupMenuItem(value: 0, child: Text('Tự động')),
-                    PopupMenuItem(value: 1, child: Text('Sáng')),
-                    PopupMenuItem(value: 2, child: Text('Tối')),
-                    PopupMenuItem(value: 3, child: Text('OLED')),
-                  ],
-                  displayLabel: (index) {
-                    switch (index) {
-                      case 0: return 'Tự động';
-                      case 1: return 'Sáng';
-                      case 2: return 'Tối';
-                      case 3: return 'OLED';
-                      default: return 'Tự động';
-                    }
-                  },
-                  onChanged: (index) async {
-                    MyApp.themeIndexNotifier.value = index;
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.setInt('themeMode', index);
-                    AppHaptics.selectionClick();
-                  },
-                ),
-                const _TileDivider(),
-                // Màu sắc chủ đạo
-                ValueListenableBuilder<Color>(
-                  valueListenable: MyApp.themeColorNotifier,
-                  builder: (context, currentColor, _) => ListTile(
-                    leading: const Icon(Icons.palette_outlined),
-                    title: const Text('Màu sắc chủ đạo'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 32,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            color: currentColor,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: colorScheme.outlineVariant,
+                      },
+                      child: _QuickInfoCard(
+                        icon: Icons.system_update_outlined,
+                        label: 'Phiên bản',
+                        child: FutureBuilder<PackageInfo>(
+                          future: PackageInfo.fromPlatform(),
+                          builder: (_, snapshot) => Text(
+                            'v${snapshot.data?.version ?? "..."}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: colorScheme.onSurface,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        Icon(Icons.chevron_right_rounded,
-                            size: 20, color: colorScheme.outline),
-                      ],
+                      ),
                     ),
-                    onTap: () =>
-                        _showAreaColorPicker(context, currentColor),
                   ),
-                ),
-                const _TileDivider(),
-                // Bố cục lưới ảnh
-                _DropdownSettingsTile<int>(
-                  icon: Icons.grid_view_rounded,
-                  title: 'Bố cục lưới ảnh',
-                  valueNotifier: MyApp.gridColumnsNotifier,
-                  items: const [
-                    PopupMenuItem(value: 1, child: Text('1 Cột')),
-                    PopupMenuItem(value: 2, child: Text('2 Cột')),
-                    PopupMenuItem(value: 3, child: Text('3 Cột')),
-                  ],
-                  displayLabel: (cols) => '$cols Cột',
-                  onChanged: (cols) async {
-                    MyApp.gridColumnsNotifier.value = cols;
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.setInt('gridColumns', cols);
-                    AppHaptics.selectionClick();
-                  },
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            // ── Section: Hệ thống ──
-            _SectionHeader(title: 'Hệ thống'),
-            const SizedBox(height: 6),
-            _SettingsCard(
-              children: [
-                // Haptics
-                ValueListenableBuilder<bool>(
-                  valueListenable: MyApp.hapticNotifier,
-                  builder: (context, val, _) => SwitchListTile(
-                    secondary: Icon(
-                      val ? Icons.vibration : Icons.vibration_outlined,
-                      color: val ? colorScheme.primary : null,
-                    ),
-                    title: const Text('Phản hồi rung'),
-                    value: val,
-                    onChanged: (v) async {
-                      MyApp.hapticNotifier.value = v;
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.setBool('hapticsEnabled', v);
-                      if (v) AppHaptics.lightImpact();
-                    },
-                  ),
-                ),
-                const _TileDivider(),
-                // Lock
-                ValueListenableBuilder<bool>(
-                  valueListenable: MyApp.lockNotifier,
-                  builder: (context, val, _) => SwitchListTile(
-                    secondary: Icon(
-                      val ? Icons.lock : Icons.lock_open_rounded,
-                      color: val ? colorScheme.primary : null,
-                    ),
-                    title: const Text('Khóa ứng dụng'),
-                    value: val,
-                    onChanged: (v) async {
-                      MyApp.lockNotifier.value = v;
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.setBool('lockEnabled', v);
-                      if (v) AppHaptics.lightImpact();
-                    },
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            // ── Section: Dữ liệu ──
-            _SectionHeader(title: 'Dữ liệu'),
-            const SizedBox(height: 6),
-            _SettingsCard(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.straighten_rounded),
-                  title: const Text('Đồng bộ kích thước'),
-                  trailing: Icon(Icons.chevron_right_rounded,
-                      size: 20, color: colorScheme.outline),
-                  onTap: () async {
-                    AppHaptics.lightImpact();
-                    final now = DateTime.now();
-                    if (_lastTapTime == null ||
-                        now.difference(_lastTapTime!) >
-                            const Duration(milliseconds: 500)) {
-                      _syncTapCount = 1;
-                    } else {
-                      _syncTapCount++;
-                    }
-                    _lastTapTime = now;
-                    if (_syncTapCount < 5) return;
-                    _syncTapCount = 0;
-                    AppHaptics.mediumImpact();
-                    final bool? confirmSync = await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('Xác nhận đồng bộ?'),
-                        content: const Text(
-                          'Bắt đầu đồng bộ kích thước từ GitHub sang Supabase?',
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () async {
+                        AppHaptics.mediumImpact();
+                        await DefaultCacheManager().emptyCache();
+                        final dirs = [
+                          await getTemporaryDirectory(),
+                          await getApplicationSupportDirectory(),
+                        ];
+                        for (final dir in dirs) {
+                          if (dir.existsSync()) {
+                            for (final entity
+                                in dir.listSync(recursive: true)) {
+                              if (entity is File) {
+                                try {
+                                  await entity.delete();
+                                } catch (_) {}
+                              }
+                            }
+                          }
+                        }
+                        await Future.delayed(
+                            const Duration(milliseconds: 400));
+                        await _calculateCacheSize();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Đã dọn dẹp bộ nhớ đệm')),
+                          );
+                        }
+                      },
+                      child: _QuickInfoCard(
+                        icon: Icons.cleaning_services_rounded,
+                        label: 'Bộ nhớ',
+                        child: Text(
+                          _cacheSize,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: colorScheme.onSurface,
+                          ),
                         ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, false),
-                            child: const Text('Hủy'),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+  
+              const SizedBox(height: 20),
+  
+              // ── Section: Giao diện & Hiển thị ──
+              const _SectionHeader(title: 'Giao diện'),
+              const SizedBox(height: 6),
+              _SettingsCard(
+                children: [
+                  // Chế độ màn hình
+                  _DropdownSettingsTile<int>(
+                    icon: Icons.brightness_6_rounded,
+                    title: 'Chế độ màn hình',
+                    valueNotifier: MyApp.themeIndexNotifier,
+                    items: const [
+                      PopupMenuItem(value: 0, child: Text('Tự động')),
+                      PopupMenuItem(value: 1, child: Text('Sáng')),
+                      PopupMenuItem(value: 2, child: Text('Tối')),
+                      PopupMenuItem(value: 3, child: Text('OLED')),
+                    ],
+                    displayLabel: (index) {
+                      switch (index) {
+                        case 0: return 'Tự động';
+                        case 1: return 'Sáng';
+                        case 2: return 'Tối';
+                        case 3: return 'OLED';
+                        default: return 'Tự động';
+                      }
+                    },
+                    onChanged: (index) async {
+                      MyApp.themeIndexNotifier.value = index;
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setInt('themeMode', index);
+                      AppHaptics.selectionClick();
+                    },
+                  ),
+                  const _TileDivider(),
+                  // Màu sắc chủ đạo
+                  ValueListenableBuilder<Color>(
+                    valueListenable: MyApp.themeColorNotifier,
+                    builder: (context, currentColor, _) => ListTile(
+                      leading: const Icon(Icons.palette_outlined),
+                      title: const Text('Màu sắc chủ đạo'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: currentColor,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: colorScheme.outlineVariant,
+                              ),
+                            ),
                           ),
-                          FilledButton(
-                            onPressed: () => Navigator.pop(ctx, true),
-                            child: const Text('Đồng ý'),
-                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.chevron_right_rounded,
+                              size: 20, color: colorScheme.outline),
                         ],
                       ),
-                    );
-                    if (confirmSync != true) return;
-                    if (!SupabaseService.isInitialized) return;
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (_) =>
-                          const Center(child: CircularProgressIndicator()),
-                    );
-                    final result =
-                        await MigrationUtility.migrateFromGitHub();
-                    Navigator.pop(context);
-                    showDialog(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        title: const Text('Kết quả đồng bộ'),
-                        content: Text(result),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Đóng'),
-                          ),
-                        ],
+                      onTap: () =>
+                          _showAreaColorPicker(context, currentColor),
+                    ),
+                  ),
+                  const _TileDivider(),
+                  // Bố cục lưới ảnh
+                  _DropdownSettingsTile<int>(
+                    icon: Icons.grid_view_rounded,
+                    title: 'Bố cục lưới ảnh',
+                    valueNotifier: MyApp.gridColumnsNotifier,
+                    items: const [
+                      PopupMenuItem(value: 1, child: Text('1 Cột')),
+                      PopupMenuItem(value: 2, child: Text('2 Cột')),
+                      PopupMenuItem(value: 3, child: Text('3 Cột')),
+                    ],
+                    displayLabel: (cols) => '$cols Cột',
+                    onChanged: (cols) async {
+                      MyApp.gridColumnsNotifier.value = cols;
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setInt('gridColumns', cols);
+                      AppHaptics.selectionClick();
+                    },
+                  ),
+                ],
+              ),
+  
+              const SizedBox(height: 20),
+  
+              // ── Section: Hệ thống ──
+              const _SectionHeader(title: 'Hệ thống'),
+              const SizedBox(height: 6),
+              _SettingsCard(
+                children: [
+                  // Haptics
+                  ValueListenableBuilder<bool>(
+                    valueListenable: MyApp.hapticNotifier,
+                    builder: (context, val, _) => SwitchListTile(
+                      secondary: Icon(
+                        val ? Icons.vibration : Icons.vibration_outlined,
+                        color: val ? colorScheme.primary : null,
                       ),
-                    );
-                  },
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 32),
-          ],
+                      title: const Text('Phản hồi rung'),
+                      value: val,
+                      onChanged: (v) async {
+                        MyApp.hapticNotifier.value = v;
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setBool('hapticsEnabled', v);
+                        if (v) AppHaptics.lightImpact();
+                      },
+                    ),
+                  ),
+                  const _TileDivider(),
+                  // Lock
+                  ValueListenableBuilder<bool>(
+                    valueListenable: MyApp.lockNotifier,
+                    builder: (context, val, _) => SwitchListTile(
+                      secondary: Icon(
+                        val ? Icons.lock : Icons.lock_open_rounded,
+                        color: val ? colorScheme.primary : null,
+                      ),
+                      title: const Text('Khóa ứng dụng'),
+                      value: val,
+                      onChanged: (v) async {
+                        MyApp.lockNotifier.value = v;
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setBool('lockEnabled', v);
+                        if (v) AppHaptics.lightImpact();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+  
+              const SizedBox(height: 20),
+  
+              // ── Section: Dữ liệu ──
+              const _SectionHeader(title: 'Dữ liệu'),
+              const SizedBox(height: 6),
+              _SettingsCard(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.straighten_rounded),
+                    title: const Text('Đồng bộ định dạng lưới'),
+                    trailing: Icon(Icons.chevron_right_rounded,
+                        size: 20, color: colorScheme.outline),
+                    onTap: () async {
+                      AppHaptics.lightImpact();
+                      final now = DateTime.now();
+                      if (_lastTapTime == null ||
+                          now.difference(_lastTapTime!) >
+                              const Duration(milliseconds: 500)) {
+                        _syncTapCount = 1;
+                      } else {
+                        _syncTapCount++;
+                      }
+                      _lastTapTime = now;
+                      if (_syncTapCount < 5) return;
+                      _syncTapCount = 0;
+                      AppHaptics.mediumImpact();
+                      final bool? confirmSync = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Xác nhận đồng bộ?'),
+                          content: const Text(
+                            'Bắt đầu đồng bộ kích thước từ GitHub sang Supabase?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Hủy'),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('Đồng ý'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmSync != true) return;
+                      if (!SupabaseService.isInitialized) return;
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) =>
+                            const Center(child: CircularProgressIndicator()),
+                      );
+                      final result =
+                          await MigrationUtility.migrateFromGitHub();
+                      Navigator.pop(context); // Close loading dialog
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text('Kết quả đồng bộ'),
+                          content: Text(result),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Đóng'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+  
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
       ),
     );
