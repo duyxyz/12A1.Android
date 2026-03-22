@@ -291,7 +291,7 @@ class _SettingsTabState extends State<SettingsTab> {
           width: 28,
           height: 28,
           decoration: BoxDecoration(
-            color: currentColor,
+            color: Theme.of(context).colorScheme.primary,
             shape: BoxShape.circle,
             border: Border.all(
               color: Colors.grey.withValues(alpha: 0.3),
@@ -589,12 +589,15 @@ class _SettingsTabState extends State<SettingsTab> {
                         height: 60,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: HSVColor.fromAHSV(
-                            1.0,
-                            hue,
-                            0.8,
-                            0.9,
-                          ).toColor(),
+                          color: ColorScheme.fromSeed(
+                            seedColor: HSVColor.fromAHSV(
+                              1.0,
+                              hue,
+                              0.8,
+                              0.9,
+                            ).toColor(),
+                            brightness: Theme.of(context).brightness,
+                          ).primary,
                           border: Border.all(color: Colors.white, width: 3),
                           boxShadow: [
                             BoxShadow(color: Colors.black12, blurRadius: 8),

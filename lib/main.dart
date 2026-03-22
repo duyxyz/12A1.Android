@@ -59,7 +59,9 @@ class MyApp extends StatelessWidget {
           valueListenable: themeColorNotifier,
           builder: (context, currentColor, _) {
             final lightTheme = ThemeData(
-              colorScheme: ColorScheme.fromSeed(seedColor: currentColor),
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: currentColor,
+              ),
               useMaterial3: true,
             );
 

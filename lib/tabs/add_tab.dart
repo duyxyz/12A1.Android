@@ -203,51 +203,9 @@ class _AddTabState extends State<AddTab> {
               ],
             )
           : null,
-      body: _isUploading
-          ? Center(
-              child: Card(
-                elevation: 0,
-                color: Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 40,
-                    horizontal: 48,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const PulseSkeleton(
-                        width: 80,
-                        height: 80,
-                        borderRadius: BorderRadius.all(Radius.circular(24)),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        _uploadStatus,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      const SizedBox(
-                        width: 120,
-                        child: LinearProgressIndicator(
-                          borderRadius: BorderRadius.all(Radius.circular(8)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            )
-          : _selectedImages.isNotEmpty
+      body: Stack(
+        children: [
+          _selectedImages.isNotEmpty
           ? SafeArea(
               child: Column(
                 children: [
@@ -335,9 +293,20 @@ class _AddTabState extends State<AddTab> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
                     decoration: BoxDecoration(
                       color: Theme.of(context).scaffoldBackgroundColor,
+                      border: Border(
+                        top: BorderSide(
+                          color: Theme.of(
+                            context,
+                          ).dividerColor.withValues(alpha: 0.2),
+                          width: 1.0,
+                        ),
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Theme.of(
@@ -353,7 +322,6 @@ class _AddTabState extends State<AddTab> {
                       height: 56,
                       child: FilledButton.icon(
                         onPressed: _uploadImage,
-                        icon: const Icon(Icons.cloud_upload_rounded),
                         label: const Text(
                           'Đăng lên Bộ Sưu Tập',
                           style: TextStyle(
@@ -434,6 +402,31 @@ class _AddTabState extends State<AddTab> {
                 ],
               ),
             ),
+          if (_isUploading)
+            Container(
+              color: Colors.black45,
+              child: Center(
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 16),
+                        Text(
+                          _uploadStatus,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
