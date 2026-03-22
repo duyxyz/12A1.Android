@@ -7,8 +7,9 @@ import 'full_screen_viewer.dart';
 class ImageGridItem extends StatefulWidget {
   final String imageUrl;
   final double aspectRatio;
+  final Map<String, dynamic>? imageMap;
 
-  const ImageGridItem({super.key, required this.imageUrl, required this.aspectRatio});
+  const ImageGridItem({super.key, required this.imageUrl, required this.aspectRatio, this.imageMap});
 
   @override
   State<ImageGridItem> createState() => _ImageGridItemState();
@@ -63,6 +64,7 @@ class _ImageGridItemState extends State<ImageGridItem>
               return FullScreenImageViewer(
                 imageUrl: widget.imageUrl,
                 aspectRatio: widget.aspectRatio,
+                imageMap: widget.imageMap,
               );
             },
             transitionsBuilder: (context, animation, secondaryAnimation, child) {

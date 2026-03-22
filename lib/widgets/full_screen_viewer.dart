@@ -7,15 +7,19 @@ import 'package:shimmer/shimmer.dart';
 import 'package:gal/gal.dart';
 import 'package:path/path.dart' as p;
 import '../utils/haptics.dart';
+import '../services/github_service.dart';
+import '../services/supabase_service.dart';
 
 class FullScreenImageViewer extends StatefulWidget {
   final String imageUrl;
   final double aspectRatio;
+  final Map<String, dynamic>? imageMap;
 
   const FullScreenImageViewer({
     super.key,
     required this.imageUrl,
     required this.aspectRatio,
+    this.imageMap,
   });
 
   @override
@@ -176,6 +180,66 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
     }
   }
 
+  bool _isDeleting = false;
+
+  Future<void> _deleteImage() async {
+    if (widget.imageMap == null || _isDeleting) return;
+
+    Navigator.pop(context);
+
+    AppHaptics.lightImpact();
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Xác nhận Xóa Ảnh'),
+          content: const Text(
+            'Bạn có chắc chắn muốn xóa vĩnh viễn bức ảnh này không? Hành động này không thể hoàn tác.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Hủy'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Xóa vĩnh viễn'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isDeleting = true);
+    try {
+      final img = widget.imageMap!;
+      if (img['path'] != null && img['sha'] != null) {
+        await GithubService.deleteImage(img['path'], img['sha']);
+      }
+      if (img['index'] != null) {
+        await SupabaseService.deleteImageMetadata(img['index'] as int);
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã xóa ảnh thành công')),
+        );
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi xóa ảnh: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isDeleting = false);
+    }
+  }
+
   void _animateReset({required double targetScale, required Offset targetOffset}) {
     final startScale = _scale;
     final startOffset = _offset;
@@ -244,6 +308,12 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
                         title: const Text('Tải xuống'),
                         onTap: _downloadImage,
                       ),
+                      if (widget.imageMap != null)
+                        ListTile(
+                          leading: const Icon(Icons.delete_rounded, color: Colors.red),
+                          title: const Text('Xóa ảnh', style: TextStyle(color: Colors.red)),
+                          onTap: _deleteImage,
+                        ),
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -295,6 +365,25 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
                         CircularProgressIndicator(),
                         SizedBox(height: 16),
                         Text('Đang lưu ảnh...'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          if (_isDeleting)
+            Container(
+              color: Colors.black45,
+              child: const Center(
+                child: Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Đang xóa ảnh...'),
                       ],
                     ),
                   ),

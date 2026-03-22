@@ -57,8 +57,11 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
               itemBuilder: (context, index) {
                 final imageUrl = widget.images[index]['download_url'];
                 final aspectRatio = widget.images[index]['aspect_ratio'] as double;
-    
-                return ImageGridItem(imageUrl: imageUrl, aspectRatio: aspectRatio);
+                return ImageGridItem(
+                  imageUrl: imageUrl, 
+                  aspectRatio: aspectRatio,
+                  imageMap: widget.images[index],
+                );
               },
             );
           },

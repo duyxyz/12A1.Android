@@ -268,6 +268,7 @@ class _MainScreenState extends State<MainScreen> {
         ),
         extendBody: false,
         bottomNavigationBar: NavigationBar(
+          indicatorShape: const CircleBorder(),
           indicatorColor: Colors.transparent,
           height: 52.0,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
