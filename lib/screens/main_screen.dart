@@ -7,7 +7,6 @@ import '../utils/haptics.dart';
 import '../utils/update_manager.dart';
 import '../tabs/home_tab.dart';
 import '../tabs/add_tab.dart';
-import '../tabs/delete_tab.dart';
 import '../tabs/settings_tab.dart';
 
 class MainScreen extends StatefulWidget {
@@ -226,16 +225,9 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildNavItem(IconData activeIcon, IconData icon, int index) {
     final isSelected = _selectedIndex == index;
-    return IconButton(
-      iconSize: 32,
-      splashColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      hoverColor: Colors.transparent,
-      icon: Icon(isSelected ? activeIcon : icon),
-      color: isSelected
-          ? Theme.of(context).colorScheme.primary
-          : Theme.of(context).colorScheme.onSurfaceVariant,
-      onPressed: () {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
         if (_selectedIndex == 0 && index == 0) {
           if (_homeScrollController.hasClients) {
             _homeScrollController.animateTo(
@@ -250,6 +242,16 @@ class _MainScreenState extends State<MainScreen> {
           _selectedIndex = index;
         });
       },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        child: Icon(
+          isSelected ? activeIcon : icon,
+          size: 32,
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
     );
   }
 
@@ -283,33 +285,37 @@ class _MainScreenState extends State<MainScreen> {
                 error: _error,
                 onRefresh: _loadData,
               ),
-              DeleteTab(
-                images: _images,
-                isLoading: _isLoading,
-                error: _error,
-                onRefresh: _loadData,
-              ),
-              SettingsTab(isSelected: _selectedIndex == 3),
+              SettingsTab(isSelected: _selectedIndex == 2),
             ],
           ),
         ),
         extendBody: false,
-        bottomNavigationBar: BottomAppBar(
-          padding: EdgeInsets.zero,
-          elevation: 0,
-          height: 48.0, // Bring it back down to the original 52 height
-          color: Theme.of(context).colorScheme.surface,
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            border: Border(
+              top: BorderSide(
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
+                width: 1.0,
+              ),
+            ),
+          ),
+          child: BottomAppBar(
+            padding: EdgeInsets.zero,
+            elevation: 0,
+            height: 48.0, // Bring it back down to the original 52 height
+            color: Colors.transparent,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(Icons.home, Icons.home_outlined, 0),
               _buildNavItem(Icons.add_circle, Icons.add_circle_outline, 1),
-              _buildNavItem(Icons.delete, Icons.delete_outline, 2),
-              _buildNavItem(Icons.settings, Icons.settings_outlined, 3),
+              _buildNavItem(Icons.settings, Icons.settings_outlined, 2),
             ],
           ),
         ),
       ),
+    ),
     );
   }
 }

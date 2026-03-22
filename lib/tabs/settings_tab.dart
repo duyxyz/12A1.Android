@@ -150,465 +150,337 @@ class _SettingsTabState extends State<SettingsTab> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      physics: const ClampingScrollPhysics(),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- Cụm Thông tin (Hàng 1 - 3 Ô bằng nhau) ---
-            Row(
-              children: [
-                Expanded(
-                  child: _buildInfoCard(
-                    context,
-                    title: 'API Limit',
-                    icon: Icons.api_rounded,
-                    content: ValueListenableBuilder<String>(
-                      valueListenable: GithubService.apiRemaining,
-                      builder: (context, remaining, _) => Text(
-                        remaining,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: _buildInfoCard(
-                    context,
-                    title: 'Phiên bản',
-                    icon: Icons.info_outline_rounded,
-                    onTap: () async {
-                      final info = await PackageInfo.fromPlatform();
-                      if (context.mounted) {
-                        _manualUpdateCheck(context, info.version);
-                      }
-                    },
-                    content: FutureBuilder<PackageInfo>(
-                      future: PackageInfo.fromPlatform(),
-                      builder: (context, snapshot) => Text(
-                        'v${snapshot.data?.version ?? "..."}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: _buildInfoCard(
-                    context,
-                    title: 'Bộ nhớ',
-                    icon: Icons.cleaning_services_rounded,
-                    onTap: () async {
-                      AppHaptics.mediumImpact();
-                      await DefaultCacheManager().emptyCache();
-                      final dirs = [
-                        await getTemporaryDirectory(),
-                        await getApplicationSupportDirectory(),
-                      ];
-                      for (final dir in dirs) {
-                        if (dir.existsSync()) {
-                          for (final entity in dir.listSync(recursive: true)) {
-                            if (entity is File) {
-                              try {
-                                await entity.delete();
-                              } catch (_) {}
-                            }
-                          }
-                        }
-                      }
-                      await Future.delayed(const Duration(milliseconds: 400));
-                      await _calculateCacheSize();
-                    },
-                    content: Text(
-                      _cacheSize,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+    return Theme(
+      data: Theme.of(context).copyWith(
+        listTileTheme: const ListTileThemeData(
+          dense: true,
+          horizontalTitleGap: 8,
+          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+        ),
+      ),
+      child: ListView(
+        physics: const ClampingScrollPhysics(),
+        padding: EdgeInsets.zero,
+        children: [
+          _buildSectionHeader('Giao diện & Hiển thị'),
+          _buildThemeModeTile(context),
+          _buildThemeColorTile(context),
+          _buildGridColumnsTile(context),
+          const Divider(height: 16),
 
-            const SizedBox(height: 10),
+          _buildSectionHeader('Hệ thống & Trải nghiệm'),
+          _buildSwitchTile(
+            title: 'Phản hồi rung',
+            icon: Icons.vibration_rounded,
+            notifier: MyApp.hapticNotifier,
+            onChanged: (v) async {
+              MyApp.hapticNotifier.value = v;
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('hapticsEnabled', v);
+              if (v) AppHaptics.lightImpact();
+            },
+          ),
+          _buildSwitchTile(
+            title: 'Khóa ứng dụng',
+            icon: Icons.lock_outline_rounded,
+            notifier: MyApp.lockNotifier,
+            onChanged: (v) async {
+              MyApp.lockNotifier.value = v;
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('lockEnabled', v);
+              if (v) AppHaptics.lightImpact();
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.sync_rounded),
+            title: const Text('Đồng bộ kích thước ảnh'),
 
-            const SizedBox(height: 12),
+            onTap: () => _handleSyncCommand(context),
+          ),
+          const Divider(height: 16),
 
-            // --- Cụm Hệ thống (Hàng 2 - Grid 2 Ô) ---
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSystemCard(
-                    context,
-                    title: 'Rung',
-                    activeIcon: Icons.vibration,
-                    inactiveIcon: Icons.vibration_outlined,
-                    enabled: MyApp.hapticNotifier,
-                    onChanged: (v) async {
-                      MyApp.hapticNotifier.value = v;
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.setBool('hapticsEnabled', v);
-                      if (v) AppHaptics.lightImpact();
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildSystemCard(
-                    context,
-                    title: 'Khóa',
-                    activeIcon: Icons.lock,
-                    inactiveIcon: Icons.lock_open_rounded,
-                    enabled: MyApp.lockNotifier,
-                    onChanged: (v) async {
-                      MyApp.lockNotifier.value = v;
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.setBool('lockEnabled', v);
-                      if (v) AppHaptics.lightImpact();
-                    },
-                  ),
-                ),
-              ],
-            ),
+          _buildSectionHeader('Thông tin & Dọn dẹp'),
+          _buildApiLimitTile(context),
+          _buildVersionTile(context),
+          _buildCacheTile(context),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
 
-            const SizedBox(height: 12),
-
-            // --- Màu sắc (Ô lẻ) ---
-            Card(
-              elevation: 0,
-              margin: EdgeInsets.zero,
-              color: Theme.of(context).colorScheme.surfaceContainerLow,
-              child: ValueListenableBuilder<Color>(
-                valueListenable: MyApp.themeColorNotifier,
-                builder: (context, currentColor, _) => InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => _showAreaColorPicker(context, currentColor),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.palette_outlined, size: 24),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Màu sắc chủ đạo',
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        const Spacer(),
-                        Container(
-                          width: 40,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: currentColor,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white24),
-                          ),
-                        ),
-                        const Icon(
-                          Icons.chevron_right_rounded,
-                          color: Colors.grey,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // --- Giao diện (Thành phần xổ xuống) ---
-            Card(
-              elevation: 0,
-              color: Theme.of(context).colorScheme.surfaceContainerLow,
-              child: Column(
-                children: [
-                  _buildDropdownTile<int>(
-                    context,
-                    title: 'Chế độ màn hình',
-                    icon: Icons.brightness_6_rounded,
-                    value: MyApp.themeIndexNotifier,
-                    items: const [
-                      PopupMenuItem(value: 0, child: Text('Tự động')),
-                      PopupMenuItem(value: 1, child: Text('Sáng')),
-                      PopupMenuItem(value: 2, child: Text('Tối')),
-                      PopupMenuItem(value: 3, child: Text('OLED')),
-                    ],
-                    onChanged: (index) async {
-                      MyApp.themeIndexNotifier.value = index;
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.setInt('themeMode', index);
-                      AppHaptics.selectionClick();
-                    },
-                    displayLabel: (index) {
-                      switch (index) {
-                        case 0:
-                          return 'Tự động';
-                        case 1:
-                          return 'Sáng';
-                        case 2:
-                          return 'Tối';
-                        case 3:
-                          return 'OLED';
-                        default:
-                          return 'Tự động';
-                      }
-                    },
-                  ),
-                  _buildDropdownTile<int>(
-                    context,
-                    title: 'Bố cục lưới ảnh',
-                    icon: Icons.grid_view_rounded,
-                    value: MyApp.gridColumnsNotifier,
-                    items: const [
-                      PopupMenuItem(value: 1, child: Text('1 Cột')),
-                      PopupMenuItem(value: 2, child: Text('2 Cột')),
-                      PopupMenuItem(value: 3, child: Text('3 Cột')),
-                    ],
-                    onChanged: (cols) async {
-                      MyApp.gridColumnsNotifier.value = cols;
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.setInt('gridColumns', cols);
-                      AppHaptics.selectionClick();
-                    },
-                    displayLabel: (cols) => '$cols Cột',
-                  ),
-                  ListTile(
-                    title: const Text(
-                      'Đồng bộ kích thước',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                    leading: const Icon(Icons.straighten_rounded),
-                    trailing: const Icon(
-                      Icons.chevron_right_rounded,
-                      color: Colors.grey,
-                      size: 20,
-                    ),
-                    onTap: () async {
-                      AppHaptics.lightImpact();
-                      final now = DateTime.now();
-                      if (_lastTapTime == null ||
-                          now.difference(_lastTapTime!) >
-                              const Duration(milliseconds: 500)) {
-                        _syncTapCount = 1;
-                      } else {
-                        _syncTapCount++;
-                      }
-                      _lastTapTime = now;
-                      if (_syncTapCount < 5) return;
-                      _syncTapCount = 0;
-                      AppHaptics.mediumImpact();
-                      final bool? confirmSync = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Xác nhận đồng bộ?'),
-                          content: const Text(
-                            'Bắt đầu đồng bộ kích thước từ GitHub sang Supabase?',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('Hủy'),
-                            ),
-                            FilledButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              child: const Text('Đồng ý'),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirmSync != true) return;
-                      if (!SupabaseService.isInitialized) return;
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (_) =>
-                            const Center(child: CircularProgressIndicator()),
-                      );
-                      final result = await MigrationUtility.migrateFromGitHub();
-                      Navigator.pop(context);
-                      showDialog(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          title: const Text('Kết quả đồng bộ'),
-                          content: Text(result),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('Đóng'),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.primary,
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
         ),
       ),
     );
   }
 
-  // --- Helper Widgets ---
-
-  Widget _buildInfoCard(
-    BuildContext context, {
+  Widget _buildSwitchTile({
     required String title,
     required IconData icon,
-    required Widget content,
-    VoidCallback? onTap,
-  }) {
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                size: 20,
-                color: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.8),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                title,
-                style: const TextStyle(fontSize: 11, color: Colors.grey),
-              ),
-              const SizedBox(height: 2),
-              content,
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSystemCard(
-    BuildContext context, {
-    required String title,
-    required IconData activeIcon,
-    required IconData inactiveIcon,
-    required ValueNotifier<bool> enabled,
+    required ValueNotifier<bool> notifier,
     required Function(bool) onChanged,
   }) {
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      child: ValueListenableBuilder<bool>(
-        valueListenable: enabled,
-        builder: (context, val, _) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
-          child: Row(
-            children: [
-              Icon(
-                val ? activeIcon : inactiveIcon,
-                size: 20,
-                color: val ? Theme.of(context).colorScheme.primary : null,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              Switch(
-                value: val,
-                onChanged: onChanged,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ],
-          ),
+    return ValueListenableBuilder<bool>(
+      valueListenable: notifier,
+      builder: (context, val, _) => SwitchListTile(
+        title: Text(title, style: const TextStyle(fontSize: 14)),
+        secondary: Icon(icon),
+        value: val,
+        onChanged: onChanged,
+      ),
+    );
+  }
+
+  Widget _buildThemeModeTile(BuildContext context) {
+    return ValueListenableBuilder<int>(
+      valueListenable: MyApp.themeIndexNotifier,
+      builder: (context, currentSettings, _) => ListTile(
+        leading: const Icon(Icons.brightness_6_outlined),
+        title: const Text('Chế độ màn hình', style: TextStyle(fontSize: 14)),
+        trailing: DropdownButton<int>(
+          value: currentSettings,
+          underline: const SizedBox(),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+          items: const [
+            DropdownMenuItem(
+              value: 0,
+              child: Text('Tự động', style: TextStyle(fontSize: 14)),
+            ),
+            DropdownMenuItem(
+              value: 1,
+              child: Text('Sáng', style: TextStyle(fontSize: 14)),
+            ),
+            DropdownMenuItem(
+              value: 2,
+              child: Text('Tối', style: TextStyle(fontSize: 14)),
+            ),
+            DropdownMenuItem(
+              value: 3,
+              child: Text('OLED', style: TextStyle(fontSize: 14)),
+            ),
+          ],
+          onChanged: (index) async {
+            if (index == null) return;
+            MyApp.themeIndexNotifier.value = index;
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setInt('themeMode', index);
+            AppHaptics.selectionClick();
+          },
         ),
       ),
     );
   }
 
-  Widget _buildDropdownTile<T>(
-    BuildContext context, {
-    required String title,
-    required IconData icon,
-    required ValueNotifier<T> value,
-    required List<PopupMenuItem<T>> items,
-    required Function(T) onChanged,
-    required String Function(T) displayLabel,
-  }) {
-    return ValueListenableBuilder<T>(
-      valueListenable: value,
-      builder: (context, current, _) => ListTile(
-        title: Text(title, style: const TextStyle(fontSize: 14)),
-        leading: Icon(icon),
-        trailing: InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: () {
-            final RenderBox button = context.findRenderObject() as RenderBox;
-            final RenderBox overlay =
-                Overlay.of(context).context.findRenderObject() as RenderBox;
-            final RelativeRect position = RelativeRect.fromRect(
-              Rect.fromPoints(
-                button.localToGlobal(
-                  button.size.bottomRight(Offset.zero),
-                  ancestor: overlay,
-                ),
-                button.localToGlobal(
-                  button.size.bottomRight(Offset.zero),
-                  ancestor: overlay,
-                ),
-              ),
-              Offset.zero & overlay.size,
-            );
-            showMenu<T>(
-              context: context,
-              position: position,
-              items: items,
-            ).then((val) {
-              if (val != null) onChanged(val);
-            });
-          },
-          child: Ink(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  displayLabel(current),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(Icons.keyboard_arrow_down_rounded, size: 18),
-              ],
+  Widget _buildThemeColorTile(BuildContext context) {
+    return ValueListenableBuilder<Color>(
+      valueListenable: MyApp.themeColorNotifier,
+      builder: (context, currentColor, _) => ListTile(
+        leading: const Icon(Icons.palette_outlined),
+        title: const Text('Màu sắc chủ đạo', style: TextStyle(fontSize: 14)),
+        trailing: Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: currentColor,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.grey.withValues(alpha: 0.3),
+              width: 1,
             ),
           ),
         ),
+        onTap: () => _showAreaColorPicker(context, currentColor),
+      ),
+    );
+  }
+
+  Widget _buildGridColumnsTile(BuildContext context) {
+    return ValueListenableBuilder<int>(
+      valueListenable: MyApp.gridColumnsNotifier,
+      builder: (context, currentSettings, _) => ListTile(
+        leading: const Icon(Icons.grid_view_rounded),
+        title: const Text(
+          'Số cột ảnh (Bố cục)',
+          style: TextStyle(fontSize: 14),
+        ),
+        trailing: DropdownButton<int>(
+          value: currentSettings,
+          underline: const SizedBox(),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+          items: const [
+            DropdownMenuItem(
+              value: 1,
+              child: Text('1 Cột', style: TextStyle(fontSize: 14)),
+            ),
+            DropdownMenuItem(
+              value: 2,
+              child: Text('2 Cột', style: TextStyle(fontSize: 14)),
+            ),
+            DropdownMenuItem(
+              value: 3,
+              child: Text('3 Cột', style: TextStyle(fontSize: 14)),
+            ),
+          ],
+          onChanged: (cols) async {
+            if (cols == null) return;
+            MyApp.gridColumnsNotifier.value = cols;
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setInt('gridColumns', cols);
+            AppHaptics.selectionClick();
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildApiLimitTile(BuildContext context) {
+    return ValueListenableBuilder<String>(
+      valueListenable: GithubService.apiRemaining,
+      builder: (context, remaining, _) => ListTile(
+        leading: const Icon(Icons.api_rounded),
+        title: const Text('Giới hạn API', style: TextStyle(fontSize: 14)),
+        subtitle: Text(
+          'Còn lại: $remaining',
+          style: const TextStyle(fontSize: 12),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVersionTile(BuildContext context) {
+    return FutureBuilder<PackageInfo>(
+      future: PackageInfo.fromPlatform(),
+      builder: (context, snapshot) => ListTile(
+        leading: const Icon(Icons.info_outline_rounded),
+        title: const Text('Phiên bản', style: TextStyle(fontSize: 14)),
+        subtitle: Text(
+          'v${snapshot.data?.version ?? "..."} ',
+          style: const TextStyle(fontSize: 12),
+        ),
+        onTap: () async {
+          if (snapshot.hasData) {
+            _manualUpdateCheck(context, snapshot.data!.version);
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildCacheTile(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.cleaning_services_rounded),
+      title: const Text('Xóa bộ nhớ đệm', style: TextStyle(fontSize: 14)),
+      subtitle: Text(
+        'Dung lượng: $_cacheSize',
+        style: const TextStyle(fontSize: 12),
+      ),
+      onTap: () async {
+        AppHaptics.mediumImpact();
+        await DefaultCacheManager().emptyCache();
+        final dirs = [
+          await getTemporaryDirectory(),
+          await getApplicationSupportDirectory(),
+        ];
+        for (final dir in dirs) {
+          if (dir.existsSync()) {
+            for (final entity in dir.listSync(recursive: true)) {
+              if (entity is File) {
+                try {
+                  await entity.delete();
+                } catch (_) {}
+              }
+            }
+          }
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Đã dọn dẹp bộ nhớ đệm thành công!')),
+          );
+        }
+        await Future.delayed(const Duration(milliseconds: 400));
+        await _calculateCacheSize();
+      },
+    );
+  }
+
+  Future<void> _handleSyncCommand(BuildContext context) async {
+    AppHaptics.lightImpact();
+    final now = DateTime.now();
+    if (_lastTapTime == null ||
+        now.difference(_lastTapTime!) > const Duration(milliseconds: 500)) {
+      _syncTapCount = 1;
+    } else {
+      _syncTapCount++;
+    }
+    _lastTapTime = now;
+    if (_syncTapCount < 5) {
+      if (_syncTapCount >= 3) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Chạm thêm ${5 - _syncTapCount} lần nữa để đồng bộ'),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
+      return;
+    }
+
+    _syncTapCount = 0;
+    AppHaptics.mediumImpact();
+    final bool? confirmSync = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xác nhận đồng bộ?'),
+        content: const Text(
+          'Bắt đầu đồng bộ dữ liệu sửa lỗi từ hộp lưu trữ sang Mạng lưới ảnh?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Đồng ý'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmSync != true || !SupabaseService.isInitialized) return;
+
+    if (!context.mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final result = await MigrationUtility.migrateFromGitHub();
+    if (!context.mounted) return;
+
+    Navigator.pop(context);
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Kết quả đồng bộ'),
+        content: Text(result),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Đóng'),
+          ),
+        ],
       ),
     );
   }
