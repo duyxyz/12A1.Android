@@ -267,13 +267,13 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
         extendBody: false,
-        bottomNavigationBar: NavigationBar(
-          indicatorShape: const CircleBorder(),
-          indicatorColor: Colors.transparent,
-          height: 52.0,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: (int index) {
+        bottomNavigationBar: BottomNavigationBar(
+          elevation: 0,
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _selectedIndex,
+          onTap: (int index) {
             if (_selectedIndex == 0 && index == 0) {
               if (_homeScrollController.hasClients) {
                 _homeScrollController.animateTo(
@@ -288,24 +288,24 @@ class _MainScreenState extends State<MainScreen> {
               _selectedIndex = index;
             });
           },
-          destinations: const <NavigationDestination>[
-            NavigationDestination(
-              selectedIcon: Icon(Icons.home),
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              activeIcon: Icon(Icons.home),
               icon: Icon(Icons.home_outlined),
               label: 'Trang chủ',
             ),
-            NavigationDestination(
-              selectedIcon: Icon(Icons.add_circle),
+            BottomNavigationBarItem(
+              activeIcon: Icon(Icons.add_circle),
               icon: Icon(Icons.add_circle_outline),
               label: 'Thêm',
             ),
-            NavigationDestination(
-              selectedIcon: Icon(Icons.delete),
+            BottomNavigationBarItem(
+              activeIcon: Icon(Icons.delete),
               icon: Icon(Icons.delete_outline),
               label: 'Xóa',
             ),
-            NavigationDestination(
-              selectedIcon: Icon(Icons.settings),
+            BottomNavigationBarItem(
+              activeIcon: Icon(Icons.settings),
               icon: Icon(Icons.settings_outlined),
               label: 'Cài đặt',
             ),
