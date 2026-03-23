@@ -54,6 +54,7 @@ dependencies:
   permission_handler: ^12.0.1
   supabase_flutter: ^2.12.0
   image: ^4.8.0
+  dotted_border: 2.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

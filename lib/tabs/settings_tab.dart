@@ -155,72 +155,114 @@ class _SettingsTabState extends State<SettingsTab> {
         listTileTheme: const ListTileThemeData(
           dense: true,
           horizontalTitleGap: 8,
-          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         ),
       ),
       child: ListView(
         physics: const ClampingScrollPhysics(),
-        padding: EdgeInsets.zero,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         children: [
-          _buildSectionHeader('Giao diện & Hiển thị'),
-          _buildThemeModeTile(context),
-          _buildThemeColorTile(context),
-          _buildGridColumnsTile(context),
-          const Divider(height: 16),
-
-          _buildSectionHeader('Hệ thống & Trải nghiệm'),
-          _buildSwitchTile(
-            title: 'Phản hồi rung',
-            icon: Icons.vibration_rounded,
-            notifier: MyApp.hapticNotifier,
-            onChanged: (v) async {
-              MyApp.hapticNotifier.value = v;
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.setBool('hapticsEnabled', v);
-              if (v) AppHaptics.lightImpact();
-            },
+          _buildSectionCard(
+            title: 'Giao diện & Hiển thị',
+            children: [
+              _buildThemeModeTile(context),
+              const Divider(height: 1, indent: 48),
+              _buildThemeColorTile(context),
+              const Divider(height: 1, indent: 48),
+              _buildGridColumnsTile(context),
+            ],
           ),
-          _buildSwitchTile(
-            title: 'Khóa ứng dụng',
-            icon: Icons.lock_outline_rounded,
-            notifier: MyApp.lockNotifier,
-            onChanged: (v) async {
-              MyApp.lockNotifier.value = v;
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.setBool('lockEnabled', v);
-              if (v) AppHaptics.lightImpact();
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.sync_rounded),
-            title: const Text('Đồng bộ kích thước ảnh'),
+          const SizedBox(height: 24),
 
-            onTap: () => _handleSyncCommand(context),
+          _buildSectionCard(
+            title: 'Hệ thống & Trải nghiệm',
+            children: [
+              _buildSwitchTile(
+                title: 'Phản hồi rung',
+                icon: Icons.vibration_rounded,
+                notifier: MyApp.hapticNotifier,
+                onChanged: (v) async {
+                  MyApp.hapticNotifier.value = v;
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool('hapticsEnabled', v);
+                  if (v) AppHaptics.lightImpact();
+                },
+              ),
+              const Divider(height: 1, indent: 48),
+              _buildSwitchTile(
+                title: 'Khóa ứng dụng',
+                icon: Icons.lock_outline_rounded,
+                notifier: MyApp.lockNotifier,
+                onChanged: (v) async {
+                  MyApp.lockNotifier.value = v;
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool('lockEnabled', v);
+                  if (v) AppHaptics.lightImpact();
+                },
+              ),
+            ],
           ),
-          const Divider(height: 16),
+          const SizedBox(height: 24),
 
-          _buildSectionHeader('Thông tin & Dọn dẹp'),
-          _buildApiLimitTile(context),
-          _buildVersionTile(context),
-          _buildCacheTile(context),
+          _buildSectionCard(
+            title: 'Thông tin & Dọn dẹp',
+            children: [
+              _buildApiLimitTile(context),
+              const Divider(height: 1, indent: 48),
+              _buildVersionTile(context),
+              const Divider(height: 1, indent: 48),
+              _buildCacheTile(context),
+              const Divider(height: 1, indent: 48),
+              ListTile(
+                leading: const Icon(Icons.aspect_ratio_rounded),
+                title: const Text('Đồng bộ kích thước ảnh'),
+                onTap: () => _handleSyncCommand(context),
+              ),
+            ],
+          ),
           const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.primary,
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
+  Widget _buildSectionCard({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 12, bottom: 8),
+          child: Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.primary,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.8,
+            ),
+          ),
         ),
-      ),
+        Card(
+          elevation: 0,
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: Theme.of(
+                context,
+              ).colorScheme.outlineVariant.withValues(alpha: 0.3),
+            ),
+          ),
+          color: Theme.of(
+            context,
+          ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          clipBehavior: Clip.antiAlias,
+          child: Column(children: children),
+        ),
+      ],
     );
   }
 
@@ -309,10 +351,7 @@ class _SettingsTabState extends State<SettingsTab> {
       valueListenable: MyApp.gridColumnsNotifier,
       builder: (context, currentSettings, _) => ListTile(
         leading: const Icon(Icons.grid_view_rounded),
-        title: const Text(
-          'Số cột ảnh (Bố cục)',
-          style: TextStyle(fontSize: 14),
-        ),
+        title: const Text('Số cột ảnh', style: TextStyle(fontSize: 14)),
         trailing: DropdownButton<int>(
           value: currentSettings,
           underline: const SizedBox(),
