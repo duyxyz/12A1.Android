@@ -288,7 +288,7 @@ class _SettingsTabState extends State<SettingsTab> {
       valueListenable: MyApp.themeIndexNotifier,
       builder: (context, currentSettings, _) => ListTile(
         leading: const Icon(Icons.brightness_6_outlined),
-        title: const Text('Chế độ màn hình', style: TextStyle(fontSize: 14)),
+        title: const Text('Hiển Thị', style: TextStyle(fontSize: 14)),
         trailing: DropdownButton<int>(
           value: currentSettings,
           underline: const SizedBox(),
@@ -328,7 +328,7 @@ class _SettingsTabState extends State<SettingsTab> {
       valueListenable: MyApp.themeColorNotifier,
       builder: (context, currentColor, _) => ListTile(
         leading: const Icon(Icons.palette_outlined),
-        title: const Text('Màu sắc chủ đạo', style: TextStyle(fontSize: 14)),
+        title: const Text('Màu Sắc', style: TextStyle(fontSize: 14)),
         trailing: Container(
           width: 28,
           height: 28,
@@ -351,7 +351,7 @@ class _SettingsTabState extends State<SettingsTab> {
       valueListenable: MyApp.gridColumnsNotifier,
       builder: (context, currentSettings, _) => ListTile(
         leading: const Icon(Icons.grid_view_rounded),
-        title: const Text('Số cột ảnh', style: TextStyle(fontSize: 14)),
+        title: const Text('Số Cột', style: TextStyle(fontSize: 14)),
         trailing: DropdownButton<int>(
           value: currentSettings,
           underline: const SizedBox(),
@@ -388,9 +388,12 @@ class _SettingsTabState extends State<SettingsTab> {
       builder: (context, remaining, _) => ListTile(
         leading: const Icon(Icons.api_rounded),
         title: const Text('Giới hạn API', style: TextStyle(fontSize: 14)),
-        subtitle: Text(
-          'Còn lại: $remaining',
-          style: const TextStyle(fontSize: 12),
+        trailing: Text(
+          '$remaining',
+          style: TextStyle(
+            fontSize: 13,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ),
     );
@@ -402,9 +405,12 @@ class _SettingsTabState extends State<SettingsTab> {
       builder: (context, snapshot) => ListTile(
         leading: const Icon(Icons.info_outline_rounded),
         title: const Text('Phiên bản', style: TextStyle(fontSize: 14)),
-        subtitle: Text(
-          'v${snapshot.data?.version ?? "..."} ',
-          style: const TextStyle(fontSize: 12),
+        trailing: Text(
+          'v${snapshot.data?.version ?? "..."}',
+          style: TextStyle(
+            fontSize: 13,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         onTap: () async {
           if (snapshot.hasData) {
@@ -419,9 +425,12 @@ class _SettingsTabState extends State<SettingsTab> {
     return ListTile(
       leading: const Icon(Icons.cleaning_services_rounded),
       title: const Text('Xóa bộ nhớ đệm', style: TextStyle(fontSize: 14)),
-      subtitle: Text(
-        'Dung lượng: $_cacheSize',
-        style: const TextStyle(fontSize: 12),
+      trailing: Text(
+        _cacheSize,
+        style: TextStyle(
+          fontSize: 13,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ),
       onTap: () async {
         AppHaptics.mediumImpact();

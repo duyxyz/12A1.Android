@@ -197,11 +197,18 @@ class _AddTabState extends State<AddTab> {
               actions: [
                 IconButton(
                   onPressed: _clearSelection,
-                  icon: const Icon(Icons.delete_sweep_rounded),
+                  icon: const Icon(Icons.clear_all_rounded),
                   tooltip: 'Xóa hết',
                 ),
                 const SizedBox(width: 8),
               ],
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(1.0),
+                child: Container(
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
+                  height: 1.0,
+                ),
+              ),
             )
           : null,
       body: Stack(
