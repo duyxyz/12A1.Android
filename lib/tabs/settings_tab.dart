@@ -343,7 +343,7 @@ class _SettingsTabState extends State<SettingsTab> {
     return ValueListenableBuilder<int>(
       valueListenable: MyApp.gridColumnsNotifier,
       builder: (context, currentSettings, _) => ListTile(
-        leading: const Icon(Icons.grid_view_rounded),
+        leading: const Icon(Icons.grid_view_outlined),
         title: const Text('Số Cột', style: TextStyle(fontSize: 14)),
         trailing: DropdownButton<int>(
           value: currentSettings,
@@ -379,7 +379,7 @@ class _SettingsTabState extends State<SettingsTab> {
     return ValueListenableBuilder<String>(
       valueListenable: GithubService.apiRemaining,
       builder: (context, remaining, _) => ListTile(
-        leading: const Icon(Icons.api_rounded),
+        leading: const Icon(Icons.token_outlined),
         title: const Text('Giới hạn API', style: TextStyle(fontSize: 14)),
         trailing: Text(
           '$remaining',
@@ -416,7 +416,7 @@ class _SettingsTabState extends State<SettingsTab> {
 
   Widget _buildCacheTile(BuildContext context) {
     return ListTile(
-      leading: const Icon(Icons.cleaning_services_rounded),
+      leading: const Icon(Icons.cleaning_services_outlined),
       title: const Text('Xóa bộ nhớ đệm', style: TextStyle(fontSize: 14)),
       trailing: Text(
         _cacheSize,

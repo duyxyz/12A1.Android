@@ -285,9 +285,17 @@ class _MainScreenState extends State<MainScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(Icons.home, Icons.home_outlined, 0),
-                _buildNavItem(Icons.add_circle, Icons.add_circle_outline, 1),
-                _buildNavItem(Icons.settings, Icons.settings_outlined, 2),
+                _buildNavItem(Icons.home_rounded, Icons.home_outlined, 0),
+                _buildNavItem(
+                  Icons.add_circle_rounded,
+                  Icons.add_circle_outline,
+                  1,
+                ),
+                _buildNavItem(
+                  Icons.settings_rounded,
+                  Icons.settings_outlined,
+                  2,
+                ),
               ],
             ),
           ),
