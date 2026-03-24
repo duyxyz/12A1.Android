@@ -185,45 +185,43 @@ class AddTabState extends State<AddTab> {
     }
 
     return Scaffold(
-      appBar: !_isUploading
-          ? AppBar(
-              leading: IconButton(
-                onPressed: _selectedImages.isNotEmpty ? _clearSelection : null,
-                icon: const Icon(Icons.delete_sweep_rounded),
-                tooltip: 'Xóa hết',
+      appBar: AppBar(
+        leading: IconButton(
+          onPressed: (_selectedImages.isNotEmpty && !_isUploading) ? _clearSelection : null,
+          icon: const Icon(Icons.delete_sweep_rounded),
+          tooltip: 'Xóa hết',
+        ),
+        title: Text(
+          'Đã chọn ${_selectedImages.length} ảnh',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        centerTitle: true,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: FilledButton.tonal(
+              onPressed: (_selectedImages.isNotEmpty && !_isUploading) ? _uploadImage : null,
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
               ),
-              title: Text(
-                'Đã chọn ${_selectedImages.length} ảnh',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
+              child: const Text(
+                'Tải lên',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              centerTitle: true,
-              actions: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: FilledButton.tonal(
-                    onPressed: _selectedImages.isNotEmpty ? _uploadImage : null,
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                    ),
-                    child: const Text(
-                      'Tải lên',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              ],
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(1.0),
-                child: Container(
-                  color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
-                  height: 1.0,
-                ),
-              ),
-            )
-          : null,
+            ),
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
+            height: 1.0,
+          ),
+        ),
+      ),
       body: Stack(
         children: [
           SafeArea(
