@@ -271,6 +271,7 @@ class _SettingsTabState extends State<SettingsTab> {
         trailing: DropdownButton<int>(
           value: currentSettings,
           underline: const SizedBox(),
+          alignment: Alignment.centerRight,
           icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
           items: const [
             DropdownMenuItem(
@@ -330,6 +331,7 @@ class _SettingsTabState extends State<SettingsTab> {
         trailing: DropdownButton<int>(
           value: currentSettings,
           underline: const SizedBox(),
+          alignment: Alignment.centerRight,
           icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
           items: const [
             DropdownMenuItem(
