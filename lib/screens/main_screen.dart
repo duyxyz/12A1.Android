@@ -121,9 +121,7 @@ class _MainScreenState extends State<MainScreen> {
       context: context,
       builder: (dialogCtx) => AlertDialog(
         title: const Text('Cập nhật ứng dụng'),
-        content: Text(
-          'Đã có phiên bản mới ${updateData['tag_name']}. Bạn muốn tải về và cài đặt ngay không?',
-        ),
+        content: Text('Đã có phiên bản mới ${updateData['tag_name']}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),

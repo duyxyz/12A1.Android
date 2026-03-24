@@ -189,7 +189,7 @@ class AddTabState extends State<AddTab> {
           ? AppBar(
               leading: IconButton(
                 onPressed: _selectedImages.isNotEmpty ? _clearSelection : null,
-                icon: const Icon(Icons.clear_all_rounded),
+                icon: const Icon(Icons.delete_sweep_rounded),
                 tooltip: 'Xóa hết',
               ),
               title: Text(
