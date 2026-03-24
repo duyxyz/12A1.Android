@@ -207,7 +207,10 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
               child: const Text('Hủy'),
             ),
             FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
               onPressed: () => Navigator.of(context).pop(true),
               child: const Text('Xóa vĩnh viễn'),
             ),
