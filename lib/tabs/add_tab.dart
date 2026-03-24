@@ -186,6 +186,11 @@ class _AddTabState extends State<AddTab> {
     return Scaffold(
       appBar: _selectedImages.isNotEmpty && !_isUploading
           ? AppBar(
+              leading: IconButton(
+                onPressed: _clearSelection,
+                icon: const Icon(Icons.clear_all_rounded),
+                tooltip: 'Xóa hết',
+              ),
               title: Text(
                 'Đã chọn ${_selectedImages.length} ảnh',
                 style: const TextStyle(
@@ -195,12 +200,19 @@ class _AddTabState extends State<AddTab> {
               ),
               centerTitle: true,
               actions: [
-                IconButton(
-                  onPressed: _clearSelection,
-                  icon: const Icon(Icons.clear_all_rounded),
-                  tooltip: 'Xóa hết',
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: FilledButton.tonal(
+                    onPressed: _uploadImage,
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    child: const Text(
+                      'Tải lên',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ),
-                const SizedBox(width: 8),
               ],
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(1.0),
@@ -311,51 +323,7 @@ class _AddTabState extends State<AddTab> {
                           },
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).scaffoldBackgroundColor,
-                          border: Border(
-                            top: BorderSide(
-                              color: Theme.of(
-                                context,
-                              ).dividerColor.withValues(alpha: 0.2),
-                              width: 1.0,
-                            ),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Theme.of(
-                                context,
-                              ).shadowColor.withValues(alpha: 0.05),
-                              offset: const Offset(0, -4),
-                              blurRadius: 16,
-                            ),
-                          ],
-                        ),
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: FilledButton.icon(
-                            onPressed: _uploadImage,
-                            label: const Text(
-                              'Đăng lên Bộ Sưu Tập',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            style: FilledButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+
                     ],
                   ),
                 )
