@@ -19,6 +19,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   List<Map<String, dynamic>> _images = [];
+  final GlobalKey<AddTabState> _addTabKey = GlobalKey<AddTabState>();
   bool _isLoading = true;
   String _error = "";
   final ScrollController _homeScrollController = ScrollController();
@@ -257,6 +258,7 @@ class _MainScreenState extends State<MainScreen> {
                 scrollController: _homeScrollController,
               ),
               AddTab(
+                key: _addTabKey,
                 images: _images,
                 isLoading: _isLoading,
                 error: _error,

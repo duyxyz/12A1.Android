@@ -26,10 +26,13 @@ class AddTab extends StatefulWidget {
   });
 
   @override
-  State<AddTab> createState() => _AddTabState();
+  State<AddTab> createState() => AddTabState();
 }
 
-class _AddTabState extends State<AddTab> {
+class AddTabState extends State<AddTab> {
+  Future<void> pickImage() async {
+    await _pickImage();
+  }
   bool _isUploading = false;
   String _uploadStatus = "";
   final ImagePicker _picker = ImagePicker();
@@ -184,10 +187,10 @@ class _AddTabState extends State<AddTab> {
     }
 
     return Scaffold(
-      appBar: _selectedImages.isNotEmpty && !_isUploading
+      appBar: !_isUploading
           ? AppBar(
               leading: IconButton(
-                onPressed: _clearSelection,
+                onPressed: _selectedImages.isNotEmpty ? _clearSelection : null,
                 icon: const Icon(Icons.clear_all_rounded),
                 tooltip: 'Xóa hết',
               ),
@@ -203,7 +206,7 @@ class _AddTabState extends State<AddTab> {
                 Padding(
                   padding: const EdgeInsets.only(right: 8.0),
                   child: FilledButton.tonal(
-                    onPressed: _uploadImage,
+                    onPressed: _selectedImages.isNotEmpty ? _uploadImage : null,
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                     ),
@@ -225,12 +228,13 @@ class _AddTabState extends State<AddTab> {
           : null,
       body: Stack(
         children: [
-          _selectedImages.isNotEmpty
-              ? SafeArea(
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: GridView.builder(
+          SafeArea(
+            child: Column(
+              children: [
+                if (widget.isLoading)
+                  const LinearProgressIndicator(),
+                Expanded(
+                  child: GridView.builder(
                           physics: const BouncingScrollPhysics(),
                           padding: const EdgeInsets.all(16),
                           gridDelegate:
@@ -323,85 +327,6 @@ class _AddTabState extends State<AddTab> {
                           },
                         ),
                       ),
-
-                    ],
-                  ),
-                )
-              : SafeArea(
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: InkWell(
-                            onTap: _pickImage,
-                            borderRadius: BorderRadius.circular(32),
-                            child: DottedBorder(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .outlineVariant
-                                  .withValues(alpha: 0.5),
-                              strokeWidth: 2,
-                              dashPattern: const [8, 5],
-                              borderType: BorderType.RRect,
-                              radius: const Radius.circular(32),
-                              padding: EdgeInsets.zero,
-                              child: Container(
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .surfaceContainerHighest
-                                      .withValues(alpha: 0.3),
-                                  borderRadius: BorderRadius.circular(32),
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(24),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .surfaceContainerHighest
-                                            .withValues(alpha: 0.5),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        Icons.photo_camera_back,
-                                        size: 64,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'Chạm để chọn ảnh',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant
-                                            .withValues(alpha: 0.7),
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (widget.isLoading)
-                        const Positioned(
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          child: LinearProgressIndicator(),
-                        ),
                     ],
                   ),
                 ),
