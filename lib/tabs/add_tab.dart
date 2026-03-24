@@ -193,9 +193,12 @@ class AddTabState extends State<AddTab> {
         ),
         title: Text(
           'Đã chọn ${_selectedImages.length} ảnh',
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
+            color: (_selectedImages.isEmpty || _isUploading)
+                ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38)
+                : null,
           ),
         ),
         centerTitle: true,
