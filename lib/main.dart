@@ -15,8 +15,8 @@ void main() async {
   final hapticsEnabled = prefs.getBool('hapticsEnabled') ?? true;
   final gridCols = prefs.getInt('gridColumns') ?? 2;
   
-  // themeIndex: 0=system, 1=light, 2=dark, 3=oled
-  MyApp.themeIndexNotifier.value = themeIndex;
+  // themeIndex: 0=system, 1=light, 2=dark (OLED)
+  MyApp.themeIndexNotifier.value = themeIndex == 3 ? 2 : themeIndex;
   MyApp.themeColorNotifier.value = Color(colorValue);
   MyApp.hapticNotifier.value = hapticsEnabled;
   MyApp.gridColumnsNotifier.value = gridCols;
@@ -45,10 +45,9 @@ class MyApp extends StatelessWidget {
     return ValueListenableBuilder<int>(
       valueListenable: themeIndexNotifier,
       builder: (context, currentThemeIndex, _) {
-        final isOled = currentThemeIndex == 3;
-        final themeMode = currentThemeIndex == 3 
-            ? ThemeMode.dark 
-            : (currentThemeIndex < 3 ? ThemeMode.values[currentThemeIndex] : ThemeMode.system);
+        final themeMode = currentThemeIndex == 2
+            ? ThemeMode.dark
+            : (currentThemeIndex == 1 ? ThemeMode.light : ThemeMode.system);
 
         return ValueListenableBuilder<Color>(
           valueListenable: themeColorNotifier,
@@ -64,18 +63,18 @@ class MyApp extends StatelessWidget {
               colorScheme: ColorScheme.fromSeed(
                 seedColor: currentColor,
                 brightness: Brightness.dark,
-                surface: isOled ? Colors.black : null,
-                surfaceContainer: isOled ? Colors.black : null,
-                surfaceContainerLow: isOled ? const Color(0xFF0D0D0D) : null,
-                surfaceContainerHigh: isOled ? const Color(0xFF1A1A1A) : null,
+                surface: Colors.black,
+                surfaceContainer: Colors.black,
+                surfaceContainerLow: const Color(0xFF0D0D0D),
+                surfaceContainerHigh: const Color(0xFF1A1A1A),
               ),
-              scaffoldBackgroundColor: isOled ? Colors.black : null,
-              appBarTheme: AppBarTheme(
-                backgroundColor: isOled ? Colors.black : null,
+              scaffoldBackgroundColor: Colors.black,
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Colors.black,
                 elevation: 0,
               ),
-              navigationBarTheme: NavigationBarThemeData(
-                backgroundColor: isOled ? Colors.black : null,
+              navigationBarTheme: const NavigationBarThemeData(
+                backgroundColor: Colors.black,
                 indicatorColor: Colors.transparent,
               ),
               useMaterial3: true,

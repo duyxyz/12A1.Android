@@ -285,10 +285,6 @@ class _SettingsTabState extends State<SettingsTab> {
               value: 2,
               child: Text('Tối', style: TextStyle(fontSize: 14)),
             ),
-            DropdownMenuItem(
-              value: 3,
-              child: Text('OLED', style: TextStyle(fontSize: 14)),
-            ),
           ],
           onChanged: (index) async {
             if (index == null) return;
