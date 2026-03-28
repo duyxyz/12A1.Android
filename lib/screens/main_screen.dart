@@ -77,14 +77,14 @@ class _MainScreenState extends State<MainScreen> {
       _debounceTimer?.cancel();
       _debounceTimer = Timer(const Duration(seconds: 3), () {
         if (!mounted) return;
-        if (data.length != _images.length) {
+        if (data.length != _images.length || hasChanges) {
           debugPrint(
-            "Phát hiện thay đổi số lượng ảnh (${_images.length} -> ${data.length}), đang tải lại...",
+            "Phát hiện thay đổi dữ liệu hoặc số lượng ảnh (${_images.length} -> ${data.length}), đang tải lại...",
           );
           _loadData();
         } else {
           debugPrint(
-            "Số lượng ảnh không đổi (${data.length}), bỏ qua việc tải lại từ GitHub.",
+            "Không có thay đổi quan trọng (${data.length} ảnh), bỏ qua việc tải lại từ GitHub.",
           );
         }
       });

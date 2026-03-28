@@ -53,8 +53,10 @@ class GithubService {
       }
     } catch (_) {}
 
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final url = '$baseUrl?t=$timestamp';
     final response = await http
-        .get(Uri.parse(baseUrl), headers: headers)
+        .get(Uri.parse(url), headers: headers)
         .timeout(const Duration(seconds: 20));
     _updateRateLimit(response);
 
