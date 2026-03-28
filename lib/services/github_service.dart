@@ -65,9 +65,10 @@ class GithubService {
       List<Map<String, dynamic>> images = [];
       for (var file in data) {
         if (file['name'].toString().endsWith('.webp')) {
-          int index =
-              int.tryParse(file['name'].toString().replaceAll('.webp', '')) ??
-              0;
+          final nameStr = file['name'].toString();
+          final baseName = nameStr.replaceAll('.webp', '');
+          final indexString = baseName.split('_').first;
+          int index = int.tryParse(indexString) ?? 0;
           images.add({
             'name': file['name'],
             'path': file['path'],

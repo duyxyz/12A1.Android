@@ -110,19 +110,18 @@ class AddTabState extends State<AddTab> {
         int? reservedIndex;
         try {
           reservedIndex = await SupabaseService.reserveNextImageIndex();
-          final filename = '$reservedIndex.webp';
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final filename = '${reservedIndex}_$timestamp.webp';
           await GithubService.uploadImage(filename, compressedBytes);
 
-          final decodedImage = img.decodeImage(compressedBytes);
-          if (decodedImage == null) {
-            throw Exception('Không thể đọc metadata ảnh sau khi nén.');
-          }
+          final decodedImage = await decodeImageFromList(compressedBytes);
 
           await SupabaseService.upsertImageMetadata(
             reservedIndex,
             decodedImage.width,
             decodedImage.height,
           );
+          decodedImage.dispose();
         } catch (e) {
           if (reservedIndex != null) {
             await SupabaseService.deleteImageMetadata(reservedIndex);
