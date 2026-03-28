@@ -8,8 +8,15 @@ class ImageGridItem extends StatefulWidget {
   final String imageUrl;
   final double aspectRatio;
   final Map<String, dynamic>? imageMap;
+  final String? heroTag;
 
-  const ImageGridItem({super.key, required this.imageUrl, required this.aspectRatio, this.imageMap});
+  const ImageGridItem({
+    super.key,
+    required this.imageUrl,
+    required this.aspectRatio,
+    this.imageMap,
+    this.heroTag,
+  });
 
   @override
   State<ImageGridItem> createState() => _ImageGridItemState();
@@ -74,6 +81,7 @@ class _ImageGridItemState extends State<ImageGridItem>
                 imageUrl: widget.imageUrl,
                 aspectRatio: widget.aspectRatio,
                 imageMap: widget.imageMap,
+                heroTag: widget.heroTag ?? widget.imageUrl,
               );
             },
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -86,7 +94,7 @@ class _ImageGridItemState extends State<ImageGridItem>
         child: AspectRatio(
           aspectRatio: widget.aspectRatio,
           child: Hero(
-            tag: widget.imageUrl,
+            tag: widget.heroTag ?? widget.imageUrl,
             child: CachedNetworkImage(
               imageUrl: widget.imageMap != null && widget.imageMap!['sha'] != null
                   ? '${widget.imageUrl}?v=${widget.imageMap!['sha']}'

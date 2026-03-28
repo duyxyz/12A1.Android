@@ -6,8 +6,10 @@ import 'dart:async';
 import '../utils/haptics.dart';
 import '../utils/update_manager.dart';
 import '../tabs/home_tab.dart';
+import '../tabs/favorites_tab.dart';
 import '../tabs/add_tab.dart';
 import '../tabs/settings_tab.dart';
+import '../services/favorite_service.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -37,6 +39,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
+    FavoriteService.init();
     _loadData();
     _setupRealtimeMetadata();
     _checkForUpdateSilent();
@@ -255,6 +258,10 @@ class _MainScreenState extends State<MainScreen> {
                 onRefresh: _loadData,
                 scrollController: _homeScrollController,
               ),
+              FavoritesTab(
+                allImages: _images,
+                isLoading: _isLoading,
+              ),
               AddTab(
                 key: _addTabKey,
                 images: _images,
@@ -262,7 +269,7 @@ class _MainScreenState extends State<MainScreen> {
                 error: _error,
                 onRefresh: _loadData,
               ),
-              SettingsTab(isSelected: _selectedIndex == 2),
+              SettingsTab(isSelected: _selectedIndex == 3),
             ],
           ),
         ),
@@ -287,14 +294,19 @@ class _MainScreenState extends State<MainScreen> {
               children: [
                 _buildNavItem(Icons.home_rounded, Icons.home_outlined, 0),
                 _buildNavItem(
+                  Icons.favorite_rounded,
+                  Icons.favorite_outline_rounded,
+                  1,
+                ),
+                _buildNavItem(
                   Icons.add_circle_rounded,
                   Icons.add_circle_outline,
-                  1,
+                  2,
                 ),
                 _buildNavItem(
                   Icons.settings_rounded,
                   Icons.settings_outlined,
-                  2,
+                  3,
                 ),
               ],
             ),

@@ -9,18 +9,21 @@ import 'package:path/path.dart' as p;
 import '../utils/haptics.dart';
 import '../services/github_service.dart';
 import '../services/supabase_service.dart';
+import '../services/favorite_service.dart';
 import 'expressive_loading_indicator.dart';
 
 class FullScreenImageViewer extends StatefulWidget {
   final String imageUrl;
   final double aspectRatio;
   final Map<String, dynamic>? imageMap;
+  final String heroTag;
 
   const FullScreenImageViewer({
     super.key,
     required this.imageUrl,
     required this.aspectRatio,
     this.imageMap,
+    required this.heroTag,
   });
 
   @override
@@ -40,6 +43,28 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
   double _dismissScale = 1.0;
 
   AnimationController? _resetAnim;
+
+  bool _isFavorite = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFavorite();
+  }
+
+  Future<void> _checkFavorite() async {
+    if (widget.imageMap != null && widget.imageMap!['sha'] != null) {
+      final isFav = await FavoriteService.isFavorite(widget.imageMap!['sha']);
+      if (mounted) setState(() => _isFavorite = isFav);
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (widget.imageMap == null || widget.imageMap!['sha'] == null) return;
+    AppHaptics.selectionClick();
+    await FavoriteService.toggleFavorite(widget.imageMap!['sha']);
+    _checkFavorite();
+  }
 
   @override
   void dispose() {
@@ -249,6 +274,59 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
     }
   }
 
+  void _showInfoDialog() {
+    AppHaptics.lightImpact();
+    final img = widget.imageMap;
+    if (img == null) return;
+
+    final name = img['name'] ?? 'Không tên';
+    final path = img['path'] ?? 'Không rõ';
+    final sizeInBytes = img['size'] as int? ?? 0;
+    final sizeFormatted = sizeInBytes > 1024 * 1024
+        ? '${(sizeInBytes / (1024 * 1024)).toStringAsFixed(2)} MB'
+        : '${(sizeInBytes / 1024).toStringAsFixed(2)} KB';
+    final type = p.extension(name).replaceAll('.', '').toUpperCase();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Thông tin ảnh'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildInfoRow('Tên file', name),
+            _buildInfoRow('Định dạng', type.isEmpty ? 'Không rõ' : type),
+            _buildInfoRow('Kích thước', sizeFormatted),
+            _buildInfoRow('Đường dẫn', path),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          ),
+          Text(value, style: const TextStyle(fontSize: 14)),
+        ],
+      ),
+    );
+  }
+
   void _animateReset({
     required double targetScale,
     required Offset targetOffset,
@@ -298,7 +376,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
                 context: context,
                 backgroundColor: Colors.transparent,
                 builder: (context) => Container(
-                  padding: const EdgeInsets.only(bottom: 24),
+                  padding: const EdgeInsets.only(bottom: 32),
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardColor,
                     borderRadius: const BorderRadius.vertical(
@@ -317,41 +395,106 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          FilledButton.tonalIcon(
-                            onPressed: _downloadImage,
-                            icon: const Icon(Icons.download_rounded),
-                            label: const Text('Tải xuống'),
-                            style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
-                              ),
-                            ),
-                          ),
-                          if (widget.imageMap != null)
-                            FilledButton.icon(
-                              onPressed: _deleteImage,
-                              icon: const Icon(Icons.delete_rounded),
-                              label: const Text('Xóa ảnh'),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.errorContainer,
-                                foregroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.error,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 12,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: FilledButton.tonalIcon(
+                                    onPressed: _downloadImage,
+                                    icon: const Icon(Icons.download_rounded),
+                                    label: const Text('Tải xuống'),
+                                    style: FilledButton.styleFrom(
+                                      foregroundColor: Theme.of(context).brightness == Brightness.dark ? Colors.white : null,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: FilledButton.icon(
+                                    onPressed: _deleteImage,
+                                    icon: const Icon(Icons.delete_outline),
+                                    label: const Text('Xóa ảnh'),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: Colors.red.withValues(
+                                        alpha: Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? 0.7
+                                            : 0.15,
+                                      ),
+                                      foregroundColor: Theme.of(context)
+                                                  .brightness ==
+                                              Brightness.dark
+                                          ? Colors.white
+                                          : Colors.red,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                        ],
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: FilledButton.tonalIcon(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      // Add a small delay to avoid race condition with Sheet closing and Hero rebuild
+                                      Future.delayed(
+                                        const Duration(milliseconds: 100),
+                                        () => _toggleFavorite(),
+                                      );
+                                    },
+                                    icon: Icon(
+                                      _isFavorite
+                                          ? Icons.favorite_rounded
+                                          : Icons.favorite_outline_rounded,
+                                    ),
+                                    label: Text(
+                                      _isFavorite ? 'Bỏ thích' : 'Yêu thích',
+                                    ),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor:
+                                          Colors.pink.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.35 : 0.15),
+                                      foregroundColor: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.pink,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: FilledButton.tonalIcon(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      _showInfoDialog();
+                                    },
+                                    icon: const Icon(Icons.info_outline_rounded),
+                                    label: const Text('Thông tin'),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor:
+                                          Colors.grey.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.35 : 0.15),
+                                      foregroundColor: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.grey[800],
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 8),
                     ],
                   ),
                 ),
@@ -370,7 +513,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
                         ..translate(_offset.dx, _offset.dy)
                         ..scale(_scale),
                       child: Hero(
-                        tag: widget.imageUrl,
+                        tag: widget.heroTag,
                         child: AspectRatio(
                           aspectRatio: widget.aspectRatio,
                           child: CachedNetworkImage(

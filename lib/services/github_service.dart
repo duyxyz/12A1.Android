@@ -63,6 +63,7 @@ class GithubService {
             'name': file['name'],
             'path': file['path'],
             'sha': file['sha'],
+            'size': file['size'],
             'download_url': file['download_url'],
             'index': index,
             'aspect_ratio': (aspectRatios[index] ?? 1.0).toDouble(),

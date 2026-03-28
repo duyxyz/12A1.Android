@@ -82,6 +82,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                   imageUrl: imageUrl,
                   aspectRatio: aspectRatio,
                   imageMap: widget.images[index],
+                  heroTag: 'home-${widget.images[index]['sha']}',
                 );
               },
             );
