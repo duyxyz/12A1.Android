@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+
 import '../main.dart';
-import '../widgets/image_grid_item.dart';
-import '../widgets/pulse_skeleton.dart';
 import '../services/favorite_service.dart';
+import '../widgets/image_grid_item.dart';
 
 class FavoritesTab extends StatefulWidget {
   final List<Map<String, dynamic>> allImages;
@@ -31,18 +31,17 @@ class _FavoritesTabState extends State<FavoritesTab>
     return ValueListenableBuilder<Set<String>>(
       valueListenable: FavoriteService.favoritesNotifier,
       builder: (context, favoriteShas, _) {
-        final List<Map<String, dynamic>> filtered = widget.allImages
+        final filtered = widget.allImages
             .where((img) => favoriteShas.contains(img['sha']))
             .toList();
 
-        // De-duplicate by SHA to be safe
-        final Set<String> seen = {};
-        final List<Map<String, dynamic>> favoriteImages = [];
-        for (var img in filtered) {
-          if (!seen.contains(img['sha'])) {
-            favoriteImages.add(img);
-            seen.add(img['sha']);
-          }
+        final seen = <String>{};
+        final favoriteImages = <Map<String, dynamic>>[];
+        for (final img in filtered) {
+          final sha = img['sha']?.toString();
+          if (sha == null || seen.contains(sha)) continue;
+          favoriteImages.add(img);
+          seen.add(sha);
         }
 
         if (favoriteImages.isEmpty && !widget.isLoading) {
@@ -53,13 +52,19 @@ class _FavoritesTabState extends State<FavoritesTab>
                 Icon(
                   Icons.favorite_border_rounded,
                   size: 64,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withOpacity(0.5),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'Chưa có ảnh yêu thích nào',
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withOpacity(0.5),
                     fontSize: 16,
                   ),
                 ),
@@ -79,14 +84,14 @@ class _FavoritesTabState extends State<FavoritesTab>
               crossAxisSpacing: 4.0,
               itemCount: favoriteImages.length,
               itemBuilder: (context, index) {
-                final imageUrl = favoriteImages[index]['download_url'];
-                final aspectRatio =
-                    favoriteImages[index]['aspect_ratio'] as double;
+                final image = favoriteImages[index];
+                final imageUrl = image['download_url'];
+                final aspectRatio = image['aspect_ratio'] as double;
                 return ImageGridItem(
                   imageUrl: imageUrl,
                   aspectRatio: aspectRatio,
-                  imageMap: favoriteImages[index],
-                  heroTag: 'fav-${favoriteImages[index]['index']}',
+                  imageMap: image,
+                  heroTag: 'fav-${image['index']}',
                 );
               },
             );

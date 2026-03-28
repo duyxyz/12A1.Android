@@ -146,9 +146,9 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
 
   bool _isDownloading = false;
 
-  Future<void> _downloadImage() async {
+  Future<void> _downloadImage(BuildContext sheetContext) async {
     if (_isDownloading) return;
-    Navigator.pop(context);
+    Navigator.of(sheetContext).pop();
 
     setState(() {
       _isDownloading = true;
@@ -216,10 +216,10 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
 
   bool _isDeleting = false;
 
-  Future<void> _deleteImage() async {
+  Future<void> _deleteImage(BuildContext sheetContext) async {
     if (widget.imageMap == null || _isDeleting) return;
 
-    Navigator.pop(context);
+    Navigator.of(sheetContext).pop();
 
     AppHaptics.lightImpact();
     final bool? confirm = await showDialog<bool>(
@@ -403,7 +403,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
                               children: [
                                 Expanded(
                                   child: FilledButton.tonalIcon(
-                                    onPressed: _downloadImage,
+                                     onPressed: () => _downloadImage(context),
                                     icon: const Icon(Icons.download_rounded),
                                     label: const Text('Tải xuống'),
                                     style: FilledButton.styleFrom(
@@ -417,7 +417,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: FilledButton.icon(
-                                    onPressed: _deleteImage,
+                                     onPressed: () => _deleteImage(context),
                                     icon: const Icon(Icons.delete_outline),
                                     label: const Text('Xóa ảnh'),
                                     style: FilledButton.styleFrom(
@@ -445,11 +445,11 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
                               children: [
                                 Expanded(
                                   child: FilledButton.tonalIcon(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      // Add a small delay to avoid race condition with Sheet closing and Hero rebuild
-                                      Future.delayed(
-                                        const Duration(milliseconds: 100),
+                                     onPressed: () {
+                                       Navigator.of(context).pop();
+                                       // Add a small delay to avoid race condition with Sheet closing and Hero rebuild
+                                       Future.delayed(
+                                         const Duration(milliseconds: 100),
                                         () => _toggleFavorite(),
                                       );
                                     },
@@ -474,10 +474,10 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: FilledButton.tonalIcon(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      _showInfoDialog();
-                                    },
+                                     onPressed: () {
+                                       Navigator.of(context).pop();
+                                       _showInfoDialog();
+                                     },
                                     icon: const Icon(Icons.info_outline_rounded),
                                     label: const Text('Thông tin'),
                                     style: FilledButton.styleFrom(
