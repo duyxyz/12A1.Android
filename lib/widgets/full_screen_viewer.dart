@@ -39,6 +39,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
   Offset _startFocalPoint = Offset.zero;
 
   bool _isDismissing = false;
+  bool _isCustomDismissing = false;
   Offset _dismissOffset = Offset.zero;
   double _dismissScale = 1.0;
 
@@ -117,10 +118,48 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
 
   void _onScaleEnd(ScaleEndDetails details) {
     if (_isDismissing) {
-      _isDismissing = false;
-      if (_dismissOffset.distance > 100) {
+      if (_dismissOffset.distance > 100 || details.velocity.pixelsPerSecond.distance > 500) {
+        
+        final isBrokenFavorite = widget.heroTag.startsWith('fav-') && !_isFavorite;
+        
+        if (isBrokenFavorite) {
+          setState(() {
+            _isDismissing = false;
+            _isCustomDismissing = true;
+          });
+          
+          _resetAnim?.dispose();
+          _resetAnim = AnimationController(
+            vsync: this,
+            duration: const Duration(milliseconds: 250),
+          );
+          
+          final startScale = _dismissScale;
+          final startOffset = _dismissOffset;
+          
+          _resetAnim!.addListener(() {
+            if (!mounted) return;
+            setState(() {
+              final t = _resetAnim!.value;
+              _dismissScale = startScale * (1.0 - t);
+              _dismissOffset = startOffset + Offset(0, 50 * t);
+            });
+          });
+          
+          _resetAnim!.addStatusListener((status) {
+            if (status == AnimationStatus.completed) {
+              if (mounted) Navigator.of(context).pop();
+            }
+          });
+          
+          _resetAnim!.forward();
+          return;
+        }
+
+        _isDismissing = false;
         Navigator.of(context).pop();
       } else {
+        _isDismissing = false;
         setState(() {
           _dismissOffset = Offset.zero;
           _dismissScale = 1.0;
@@ -355,9 +394,13 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
 
   @override
   Widget build(BuildContext context) {
-    final double bgOpacity = _isDismissing
+    double bgOpacity = (_isDismissing || _isCustomDismissing)
         ? (1.0 - (_dismissOffset.distance / 300)).clamp(0.0, 1.0)
         : 1.0;
+
+    if (_isCustomDismissing && _resetAnim != null) {
+      bgOpacity *= (1.0 - _resetAnim!.value);
+    }
 
     return Scaffold(
       backgroundColor: Theme.of(
@@ -502,9 +545,9 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
             behavior: HitTestBehavior.opaque,
             child: SizedBox.expand(
               child: Transform.translate(
-                offset: _isDismissing ? _dismissOffset : Offset.zero,
+                offset: (_isDismissing || _isCustomDismissing) ? _dismissOffset : Offset.zero,
                 child: Transform.scale(
-                  scale: _isDismissing ? _dismissScale : 1.0,
+                  scale: (_isDismissing || _isCustomDismissing) ? _dismissScale : 1.0,
                   child: Center(
                     child: Transform(
                       alignment: Alignment.center,
