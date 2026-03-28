@@ -31,7 +31,7 @@ class _ImageGridItemState extends State<ImageGridItem>
   Widget build(BuildContext context) {
     super.build(context);
 
-    return InkWell(
+    return GestureDetector(
       onTap: () async {
         AppHaptics.selectionClick();
         
