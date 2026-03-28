@@ -86,7 +86,7 @@ class _FavoritesTabState extends State<FavoritesTab>
                   imageUrl: imageUrl,
                   aspectRatio: aspectRatio,
                   imageMap: favoriteImages[index],
-                  heroTag: 'fav-${favoriteImages[index]['sha']}',
+                  heroTag: 'fav-${favoriteImages[index]['index']}',
                 );
               },
             );
