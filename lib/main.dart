@@ -11,6 +11,7 @@ import 'logic/viewmodels/home_view_model.dart';
 import 'logic/viewmodels/update_view_model.dart';
 import 'screens/main_screen.dart';
 import 'utils/scroll_behavior.dart';
+import 'services/favorite_service.dart';
 
 // Dependencies Container
 class AppDependencies {
@@ -38,6 +39,8 @@ class AppDependencies {
     await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
     
     // 2. Services
+    await FavoriteService.init();
+    
     final githubApi = GithubApiService(
       token: const String.fromEnvironment('GH_TOKEN'),
       owner: 'duyxyz',
