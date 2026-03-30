@@ -36,12 +36,19 @@ jobs:
       - name: Extract Version from pubspec.yaml
         id: pubspec
         run: |
-          # Trích xuất version name (ví dụ: 1.1.0)
-          VERSION_NAME=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2 | cut -d '+' -f 1)
-          # Trích xuất build number gốc (ví dụ: 3000)
-          VERSION_CODE=$(grep '^version: ' pubspec.yaml | cut -d '+' -f 2)
+          # Trích xuất dòng version và làm sạch ký tự lạ
+          VERSION_LINE=$(grep "^version: " pubspec.yaml | sed 's/version: //')
           
-          # Tính toán build number mới: Lấy gốc cộng với run_number của GitHub
+          # Trích xuất Version Name (ví dụ: 1.1.0)
+          VERSION_NAME=$(echo $VERSION_LINE | cut -d '+' -f 1 | tr -d '[:space:]')
+          
+          # Trích xuất Version Code gốc (ví dụ: 3000), mặc định là 1 nếu trống
+          VERSION_CODE=$(echo $VERSION_LINE | cut -s -d '+' -f 2 | tr -d '[:space:]')
+          if [ -z "$VERSION_CODE" ]; then
+            VERSION_CODE=1
+          fi
+          
+          # Tính toán build number mới: Gốc + github.run_number
           NEW_BUILD_NUMBER=$((VERSION_CODE + github.run_number))
           
           echo "version=$VERSION_NAME" >> $GITHUB_OUTPUT
