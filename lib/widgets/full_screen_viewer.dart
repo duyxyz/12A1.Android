@@ -13,155 +13,57 @@ import '../services/favorite_service.dart';
 import 'expressive_loading_indicator.dart';
 
 class FullScreenImageViewer extends StatefulWidget {
-  final GalleryImage image;
-  final String heroTag;
+  final List<GalleryImage> images;
+  final int initialIndex;
 
   const FullScreenImageViewer({
     super.key,
-    required this.image,
-    required this.heroTag,
+    required this.images,
+    required this.initialIndex,
   });
 
   @override
   State<FullScreenImageViewer> createState() => _FullScreenImageViewerState();
 }
 
-class _FullScreenImageViewerState extends State<FullScreenImageViewer>
-    with TickerProviderStateMixin {
-  double _scale = 1.0;
-  double _baseScale = 1.0;
-  Offset _offset = Offset.zero;
-  Offset _baseOffset = Offset.zero;
-  Offset _startFocalPoint = Offset.zero;
-
-  bool _isDismissing = false;
-  bool _isCustomDismissing = false;
-  Offset _dismissOffset = Offset.zero;
-  double _dismissScale = 1.0;
-
-  AnimationController? _resetAnim;
-
+class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
+  late PageController _pageController;
+  late int _currentIndex;
+  
   bool _isFavorite = false;
+  bool _isDownloading = false;
+  bool _isDeleting = false;
+  
+  double _dismissOffset = 0.0;
+  double _dismissOpacity = 1.0;
+  double _dismissScale = 1.0;
 
   @override
   void initState() {
     super.initState();
-    _checkFavorite();
-  }
-
-  Future<void> _checkFavorite() async {
-    final isFav = await FavoriteService.isFavorite(widget.image.sha);
-    if (mounted) setState(() => _isFavorite = isFav);
-  }
-
-  Future<void> _toggleFavorite() async {
-    AppHaptics.selectionClick();
-    await FavoriteService.toggleFavorite(widget.image.sha);
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
     _checkFavorite();
   }
 
   @override
   void dispose() {
-    _resetAnim?.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
-  void _onScaleStart(ScaleStartDetails details) {
-    _resetAnim?.stop();
-    _baseScale = _scale;
-    _baseOffset = _offset;
-    _startFocalPoint = details.localFocalPoint;
+  GalleryImage get currentImage => widget.images[_currentIndex];
 
-    _isDismissing =
-        details.pointerCount == 1 && _scale <= 1.01 && _offset.distance < 5;
+  Future<void> _checkFavorite() async {
+    final isFav = await FavoriteService.isFavorite(currentImage.sha);
+    if (mounted) setState(() => _isFavorite = isFav);
   }
 
-  void _onScaleUpdate(ScaleUpdateDetails details) {
-    setState(() {
-      if (details.pointerCount >= 2) {
-        if (_isDismissing) {
-          _isDismissing = false;
-          _dismissOffset = Offset.zero;
-          _dismissScale = 1.0;
-          _baseScale = _scale;
-          _baseOffset = _offset;
-          _startFocalPoint = details.localFocalPoint;
-          return;
-        }
-
-        final newScale = (_baseScale * details.scale).clamp(0.5, 5.0);
-        final double k = newScale / _scale;
-
-        final screenSize = MediaQuery.of(context).size;
-        final center = Offset(screenSize.width / 2, screenSize.height / 2);
-        final focal = details.localFocalPoint;
-        _offset = (focal - center) * (1 - k) + _offset * k;
-        _scale = newScale;
-      } else if (_isDismissing) {
-        _dismissOffset += details.focalPointDelta;
-        _dismissScale = (1.0 - (_dismissOffset.distance / 1500)).clamp(0.6, 1.0);
-      } else if (_scale > 1.01) {
-        _offset += details.focalPointDelta;
-      }
-    });
+  Future<void> _toggleFavorite() async {
+    AppHaptics.selectionClick();
+    await FavoriteService.toggleFavorite(currentImage.sha);
+    _checkFavorite();
   }
-
-  void _onScaleEnd(ScaleEndDetails details) {
-    if (_isDismissing) {
-      if (_dismissOffset.distance > 100 || details.velocity.pixelsPerSecond.distance > 500) {
-        final isBrokenFavorite = widget.heroTag.startsWith('fav-') && !_isFavorite;
-        if (isBrokenFavorite) {
-          setState(() {
-            _isDismissing = false;
-            _isCustomDismissing = true;
-          });
-          _resetAnim?.dispose();
-          _resetAnim = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
-          final startScale = _dismissScale;
-          final startOffset = _dismissOffset;
-          _resetAnim!.addListener(() {
-            if (!mounted) return;
-            setState(() {
-              final t = _resetAnim!.value;
-              _dismissScale = startScale * (1.0 - t);
-              _dismissOffset = startOffset + Offset(0, 50 * t);
-            });
-          });
-          _resetAnim!.addStatusListener((status) {
-            if (status == AnimationStatus.completed) {
-              if (mounted) Navigator.of(context).pop();
-            }
-          });
-          _resetAnim!.forward();
-          return;
-        }
-        _isDismissing = false;
-        Navigator.of(context).pop();
-      } else {
-        _isDismissing = false;
-        setState(() {
-          _dismissOffset = Offset.zero;
-          _dismissScale = 1.0;
-        });
-      }
-      return;
-    }
-    if (_scale < 1.0) {
-      _animateReset(targetScale: 1.0, targetOffset: Offset.zero);
-    } else if (_scale <= 1.05 && _offset.distance > 1) {
-      _animateReset(targetScale: 1.0, targetOffset: Offset.zero);
-    }
-  }
-
-  void _onDoubleTap() {
-    if (_scale > 1.05) {
-      _animateReset(targetScale: 1.0, targetOffset: Offset.zero);
-    } else {
-      _animateReset(targetScale: 2.5, targetOffset: Offset.zero);
-    }
-  }
-
-  bool _isDownloading = false;
 
   Future<void> _downloadImage(BuildContext sheetContext) async {
     if (_isDownloading) return;
@@ -170,7 +72,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
     AppHaptics.mediumImpact();
 
     try {
-      final downloadUrl = '${widget.image.downloadUrl}?v=${widget.image.sha}';
+      final downloadUrl = '${currentImage.downloadUrl}?v=${currentImage.sha}';
       final response = await http.get(Uri.parse(downloadUrl));
       if (response.statusCode != 200) throw Exception("Server trả về lỗi: ${response.statusCode}");
 
@@ -187,7 +89,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
         if (!granted) throw Exception("Bạn chưa cấp quyền lưu ảnh cho ứng dụng");
       }
 
-      final fileName = p.basenameWithoutExtension(widget.image.downloadUrl);
+      final fileName = p.basenameWithoutExtension(currentImage.downloadUrl);
       await Gal.putImageBytes(jpegBytes, name: fileName);
 
       if (mounted) {
@@ -205,8 +107,6 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
       if (mounted) setState(() => _isDownloading = false);
     }
   }
-
-  bool _isDeleting = false;
 
   Future<void> _deleteImage(BuildContext sheetContext) async {
     if (_isDeleting) return;
@@ -233,10 +133,16 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
     if (confirm != true) return;
     setState(() => _isDeleting = true);
     try {
-      await AppDependencies.instance.homeViewModel.deleteImage(widget.image);
+      await AppDependencies.instance.homeViewModel.deleteImage(currentImage);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã xóa ảnh thành công')));
-        Navigator.of(context).pop(true);
+        if (widget.images.length <= 1) {
+          Navigator.of(context).pop(true);
+        } else {
+          // If images remains, we stay in gallery but move or refresh? 
+          // Simplest is to pop back to grid to refresh.
+          Navigator.of(context).pop(true);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -249,9 +155,9 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
 
   void _showInfoDialog() {
     AppHaptics.lightImpact();
-    final name = widget.image.name;
-    final path = widget.image.path;
-    final sizeInBytes = widget.image.size;
+    final name = currentImage.name;
+    final path = currentImage.path;
+    final sizeInBytes = currentImage.size;
     final sizeFormatted = sizeInBytes > 1024 * 1024
         ? '${(sizeInBytes / (1024 * 1024)).toStringAsFixed(2)} MB'
         : '${(sizeInBytes / 1024).toStringAsFixed(2)} KB';
@@ -291,79 +197,97 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
     );
   }
 
-  void _animateReset({required double targetScale, required Offset targetOffset}) {
-    final startScale = _scale;
-    final startOffset = _offset;
-    _resetAnim?.dispose();
-    _resetAnim = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
-    final curved = CurvedAnimation(parent: _resetAnim!, curve: Curves.easeOut);
-    curved.addListener(() {
-      setState(() {
-        final t = curved.value;
-        _scale = startScale + (targetScale - startScale) * t;
-        _offset = Offset.lerp(startOffset, targetOffset, t)!;
-      });
-    });
-    _resetAnim!.forward();
-  }
-
   @override
   Widget build(BuildContext context) {
-    double bgOpacity = (_isDismissing || _isCustomDismissing)
-        ? (1.0 - (_dismissOffset.distance / 300)).clamp(0.0, 1.0)
-        : 1.0;
-    if (_isCustomDismissing && _resetAnim != null) bgOpacity *= (1.0 - _resetAnim!.value);
-
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor.withOpacity(bgOpacity),
-      body: Stack(
-        children: [
-          GestureDetector(
-            onScaleStart: _onScaleStart,
-            onScaleUpdate: _onScaleUpdate,
-            onScaleEnd: _onScaleEnd,
-            onDoubleTap: _onDoubleTap,
-            onLongPress: () {
-              AppHaptics.mediumImpact();
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: Colors.transparent,
-                builder: (context) => _buildBottomSheet(context),
-              );
-            },
-            behavior: HitTestBehavior.opaque,
-            child: SizedBox.expand(
+    return PopScope(
+      canPop: _dismissOffset.abs() < 10,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        // Logic for handling back if needed (already handled by system mostly)
+      },
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          children: [
+            // Dynamic Background
+            Positioned.fill(
+              child: Opacity(
+                opacity: _dismissOpacity,
+                child: Container(color: Colors.black),
+              ),
+            ),
+            
+            // Image Content
+            GestureDetector(
+              onVerticalDragUpdate: (details) {
+                setState(() {
+                  _dismissOffset += details.delta.dy;
+                  _dismissOpacity = (1.0 - (_dismissOffset.abs() / 400)).clamp(0.0, 1.0);
+                  _dismissScale = (1.0 - (_dismissOffset.abs() / 1500)).clamp(0.6, 1.0);
+                });
+              },
+              onVerticalDragEnd: (details) {
+                if (_dismissOffset.abs() > 100 || details.velocity.pixelsPerSecond.distance > 400) {
+                  Navigator.of(context).pop();
+                } else {
+                  setState(() {
+                    _dismissOffset = 0.0;
+                    _dismissOpacity = 1.0;
+                    _dismissScale = 1.0;
+                  });
+                }
+              },
+              onLongPress: () {
+                AppHaptics.mediumImpact();
+                showModalBottomSheet(
+                  context: context,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => _buildBottomSheet(context),
+                );
+              },
               child: Transform.translate(
-                offset: (_isDismissing || _isCustomDismissing) ? _dismissOffset : Offset.zero,
+                offset: Offset(0, _dismissOffset),
                 child: Transform.scale(
-                  scale: (_isDismissing || _isCustomDismissing) ? _dismissScale : 1.0,
-                  child: Center(
-                    child: Transform(
-                      alignment: Alignment.center,
-                      transform: Matrix4.identity()
-                        ..translate(_offset.dx, _offset.dy)
-                        ..scale(_scale),
-                      child: Hero(
-                        tag: widget.heroTag,
-                        child: AspectRatio(
-                          aspectRatio: widget.image.aspectRatio,
-                          child: CachedNetworkImage(
-                            imageUrl: '${widget.image.downloadUrl}?v=${widget.image.sha}',
-                            fit: BoxFit.cover,
-                            width: double.infinity, height: double.infinity,
-                            errorWidget: (context, url, error) => Icon(Icons.error, color: Theme.of(context).colorScheme.error),
+                  scale: _dismissScale,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: widget.images.length,
+                    onPageChanged: (index) {
+                      setState(() => _currentIndex = index);
+                      _checkFavorite();
+                      AppHaptics.lightImpact();
+                    },
+                    itemBuilder: (context, index) {
+                      final image = widget.images[index];
+                      return InteractiveViewer(
+                        minScale: 0.5,
+                        maxScale: 3.0,
+                        child: Center(
+                          child: AspectRatio(
+                            aspectRatio: image.aspectRatio,
+                            child: CachedNetworkImage(
+                              imageUrl: '${image.downloadUrl}?v=${image.sha}',
+                              fit: BoxFit.contain,
+                              fadeInDuration: const Duration(milliseconds: 200),
+                              fadeOutDuration: const Duration(milliseconds: 200),
+                              placeholder: (context, url) => const Center(
+                                child: ExpressiveLoadingIndicator(isContained: true),
+                              ),
+                              errorWidget: (context, url, error) => const Icon(Icons.error, color: Colors.white24),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ),
               ),
             ),
-          ),
-          if (_isDownloading) _buildLoadingOverlay('Đang lưu ảnh...'),
-          if (_isDeleting) _buildLoadingOverlay('Đang xóa ảnh...'),
-        ],
+  
+            if (_isDownloading) _buildLoadingOverlay('Đang lưu ảnh...'),
+            if (_isDeleting) _buildLoadingOverlay('Đang xóa ảnh...'),
+          ],
+        ),
       ),
     );
   }
@@ -371,40 +295,48 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
   Widget _buildBottomSheet(BuildContext context) {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.only(bottom: 32),
-      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
+      padding: const EdgeInsets.only(bottom: 32, top: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(margin: const EdgeInsets.symmetric(vertical: 12), width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              children: [
-                Row(children: [
-                  Expanded(child: _buildActionBtn('Tải xuống', Colors.blue, () => _downloadImage(context), isDark)),
-                  const SizedBox(width: 12),
-                  Expanded(child: _buildActionBtn(_isFavorite ? 'Bỏ thích' : 'Yêu thích', Colors.pink, () { Navigator.pop(context); _toggleFavorite(); }, isDark)),
-                ]),
-                const SizedBox(height: 12),
-                Row(children: [
-                  Expanded(child: _buildActionBtn('Thông tin', Colors.grey, () { Navigator.pop(context); _showInfoDialog(); }, isDark)),
-                  const SizedBox(width: 12),
-                  Expanded(child: _buildActionBtn('Xóa ảnh', Colors.red, () => _deleteImage(context), isDark)),
-                ]),
-              ],
-            ),
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            width: 32,
+            height: 4,
+            decoration: BoxDecoration(color: Colors.grey.withOpacity(0.2), borderRadius: BorderRadius.circular(2)),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildIconAction(Icons.download_rounded, Colors.blue, () => _downloadImage(context), isDark),
+              _buildIconAction(
+                _isFavorite ? Icons.favorite_rounded : Icons.favorite_outline_rounded,
+                Colors.pink,
+                () { Navigator.pop(context); _toggleFavorite(); },
+                isDark,
+              ),
+              _buildIconAction(Icons.info_outline_rounded, Colors.teal, () { Navigator.pop(context); _showInfoDialog(); }, isDark),
+              _buildIconAction(Icons.delete_outline_rounded, Colors.red, () => _deleteImage(context), isDark),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionBtn(String label, Color color, VoidCallback onPressed, bool isDark) {
-    return FilledButton.tonal(
+  Widget _buildIconAction(IconData icon, Color color, VoidCallback onPressed, bool isDark) {
+    return IconButton.filledTonal(
       onPressed: onPressed,
-      style: FilledButton.styleFrom(backgroundColor: color.withOpacity(0.2), foregroundColor: isDark ? Colors.white : color, padding: const EdgeInsets.symmetric(vertical: 16)),
-      child: Text(label),
+      icon: Icon(icon, size: 26),
+      style: IconButton.styleFrom(
+        backgroundColor: color.withOpacity(0.2),
+        foregroundColor: color,
+        padding: const EdgeInsets.all(16),
+      ),
     );
   }
 

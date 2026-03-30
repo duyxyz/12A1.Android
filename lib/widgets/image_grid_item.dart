@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'pulse_skeleton.dart';
+import '../main.dart';
 import '../data/models/gallery_image.dart';
 import '../utils/haptics.dart';
 import 'full_screen_viewer.dart';
@@ -19,19 +20,22 @@ class ImageGridItem extends StatefulWidget {
   State<ImageGridItem> createState() => _ImageGridItemState();
 }
 
-class _ImageGridItemState extends State<ImageGridItem>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true; 
-
+class _ImageGridItemState extends State<ImageGridItem> {
   @override
   Widget build(BuildContext context) {
-    super.build(context);
+
+    final gridConfig = AppDependencies.instance.configViewModel;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cacheWidth = (screenWidth / gridConfig.gridColumns * MediaQuery.of(context).devicePixelRatio).round();
 
     return GestureDetector(
       onTap: () async {
         AppHaptics.selectionClick();
         
+        // Precache full image before navigation for smoother transition
+        final fullImageUrl = '${widget.image.downloadUrl}?v=${widget.image.sha}';
+        precacheImage(CachedNetworkImageProvider(fullImageUrl), context);
+
         final RenderBox? box = context.findRenderObject() as RenderBox?;
         if (box != null) {
           final position = box.localToGlobal(Offset.zero);
@@ -74,9 +78,10 @@ class _ImageGridItemState extends State<ImageGridItem>
             opaque: false,
             barrierColor: Colors.transparent,
             pageBuilder: (context, animation, secondaryAnimation) {
+              final vm = AppDependencies.instance.homeViewModel;
               return FullScreenImageViewer(
-                image: widget.image,
-                heroTag: widget.heroTag ?? widget.image.downloadUrl,
+                images: vm.images,
+                initialIndex: vm.images.indexOf(widget.image),
               );
             },
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -88,21 +93,20 @@ class _ImageGridItemState extends State<ImageGridItem>
       child: ClipRRect(
         child: AspectRatio(
           aspectRatio: widget.image.aspectRatio,
-          child: Hero(
-            tag: widget.heroTag ?? widget.image.downloadUrl,
-            child: CachedNetworkImage(
-              imageUrl: '${widget.image.downloadUrl}?v=${widget.image.sha}',
-              fit: BoxFit.cover,
-              fadeInDuration: const Duration(milliseconds: 300),
-              fadeOutDuration: const Duration(milliseconds: 300),
-              placeholder: (context, url) => const PulseSkeleton(),
-              errorWidget: (context, url, error) => Container(
-                color: Theme.of(context).colorScheme.errorContainer,
-                child: Icon(
-                  Icons.image_not_supported_rounded,
-                  color: Theme.of(context).colorScheme.error,
-                  size: 24,
-                ),
+          child: CachedNetworkImage(
+            imageUrl: '${widget.image.downloadUrl}?v=${widget.image.sha}',
+            fit: BoxFit.cover,
+            memCacheWidth: cacheWidth,
+            maxWidthDiskCache: 1200, // Reasonable limit for disk cache
+            fadeInDuration: const Duration(milliseconds: 200),
+            fadeOutDuration: const Duration(milliseconds: 200),
+            placeholder: (context, url) => const PulseSkeleton(),
+            errorWidget: (context, url, error) => Container(
+              color: Theme.of(context).colorScheme.errorContainer,
+              child: Icon(
+                Icons.image_not_supported_rounded,
+                color: Theme.of(context).colorScheme.error,
+                size: 24,
               ),
             ),
           ),

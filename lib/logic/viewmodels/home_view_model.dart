@@ -35,32 +35,39 @@ class HomeViewModel extends ChangeNotifier {
     }
   }
 
+  Timer? _debounceTimer;
+
   void _setupRealtimeSubscription() {
     _metadataSubscription?.cancel();
     _metadataSubscription = _imageRepository.watchMetadata().listen((newMetadata) {
-      final currentIndices = _images.map((img) => img.index).toSet();
-      final newIndices = newMetadata.keys.toSet();
+      _debounceTimer?.cancel();
+      _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+        if (!hasListeners) return;
+        
+        final currentIndices = _images.map((img) => img.index).toSet();
+        final newIndices = newMetadata.keys.toSet();
 
-      // Check if any image was added or deleted by comparing indices
-      if (newIndices.length != currentIndices.length || !newIndices.containsAll(currentIndices)) {
-        // Mismatch found, need to reload full list to reflect file changes (URLs, SHAs) from GitHub
-        loadImages();
-      } else {
-        // Same set of images, just update aspect ratios in-place for performance
-        bool hasChanges = false;
-        _images = _images.map((img) {
-          final newRatio = newMetadata[img.index];
-          if (newRatio != null && newRatio != img.aspectRatio) {
-            hasChanges = true;
-            return img.copyWith(aspectRatio: newRatio);
+        // Check if any image was added or deleted by comparing indices
+        if (newIndices.length != currentIndices.length || !newIndices.containsAll(currentIndices)) {
+          // Mismatch found, need to reload full list to reflect file changes (URLs, SHAs) from GitHub
+          loadImages();
+        } else {
+          // Same set of images, just update aspect ratios in-place for performance
+          bool hasChanges = false;
+          _images = _images.map((img) {
+            final newRatio = newMetadata[img.index];
+            if (newRatio != null && newRatio != img.aspectRatio) {
+              hasChanges = true;
+              return img.copyWith(aspectRatio: newRatio);
+            }
+            return img;
+          }).toList();
+
+          if (hasChanges) {
+            notifyListeners();
           }
-          return img;
-        }).toList();
-
-        if (hasChanges) {
-          notifyListeners();
         }
-      }
+      });
     });
   }
 
