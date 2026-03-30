@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'dart:typed_data' show Uint8List;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -33,16 +33,18 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
   AnimationController? _resetAnim;
 
   bool _isFavorite = false;
+  final FocusNode _focusNode = FocusNode(debugLabel: 'ViewerFocusNode');
 
   @override
   void initState() {
     super.initState();
     _checkFavorite();
-    // Yêu cầu Focus ngay lập tức để Android 14 nhận diện được cử chỉ vuốt ngược (Predictive Back)
-    // mà không cần phải chạm vào màn hình trước
+    
+    // Yêu cầu Focus một cách chủ động để đánh thức hệ thống Predictive Back
+    // Đây là bước quan trọng nhất để không phải "chạm một lần mới vuốt được"
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        FocusScope.of(context).requestFocus(FocusNode());
+        _focusNode.requestFocus();
       }
     });
   }
@@ -61,6 +63,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
   @override
   void dispose() {
     _resetAnim?.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -252,56 +255,70 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Center(
-              child: Transform(
-                alignment: Alignment.center,
-                transform: Matrix4.identity()
-                  ..translate(_offset.dx, _offset.dy)
-                  ..scale(_scale),
-                child: AspectRatio(
-                  aspectRatio: widget.image.aspectRatio,
-                  child: CachedNetworkImage(
-                    imageUrl: '${widget.image.downloadUrl}?v=${widget.image.sha}',
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                    errorWidget: (context, url, error) => Icon(
-                      Icons.error,
-                      color: Theme.of(context).colorScheme.error,
+      body: PopScope(
+        canPop: _scale <= 1.05,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          if (_scale > 1.05) {
+            _animateReset(targetScale: 1.0, targetOffset: Offset.zero);
+          }
+        },
+        child: Focus(
+          focusNode: _focusNode,
+          autofocus: true,
+          descendantsAreFocusable: true,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Center(
+                  child: Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.identity()
+                      ..translate(_offset.dx, _offset.dy)
+                      ..scale(_scale),
+                    child: AspectRatio(
+                      aspectRatio: widget.image.aspectRatio,
+                      child: CachedNetworkImage(
+                        imageUrl: '${widget.image.downloadUrl}?v=${widget.image.sha}',
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        errorWidget: (context, url, error) => Icon(
+                          Icons.error,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
+              Positioned.fill(
+                // Chừa một khoảng đệm ở lề (16px) để Android luôn bắt được Predictive Back
+                // Tránh tình trạng GestureDetector của Flutter "chiếm lĩnh" hoàn toàn biên màn hình
+                left: _scale > 1.05 ? 0 : 16,
+                right: _scale > 1.05 ? 0 : 16,
+                child: GestureDetector(
+                  onScaleStart: _onScaleStart,
+                  onScaleUpdate: _onScaleUpdate,
+                  onScaleEnd: _onScaleEnd,
+                  onDoubleTap: _onDoubleTap,
+                  onLongPress: () {
+                    AppHaptics.mediumImpact();
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => _buildCompactBottomSheet(context),
+                    );
+                  },
+                  behavior: HitTestBehavior.translucent,
+                  child: const SizedBox.expand(),
+                ),
+              ),
+              if (_isDownloading) _buildLoadingOverlay('Đang lưu ảnh...'),
+              if (_isDeleting) _buildLoadingOverlay('Đang xóa ảnh...'),
+            ],
           ),
-          Positioned.fill(
-            // Chừa một khoảng nhỏ ở biên (18px) để Android luôn nhận diện được vuốt ngược
-            // ngay từ khi vừa mở ảnh mà không bị app chiếm mất cử chỉ
-            left: _scale > 1.05 ? 0 : 18,
-            right: _scale > 1.05 ? 0 : 18,
-            child: GestureDetector(
-              onScaleStart: _onScaleStart,
-              onScaleUpdate: _onScaleUpdate,
-              onScaleEnd: _onScaleEnd,
-              onDoubleTap: _onDoubleTap,
-              onLongPress: () {
-                AppHaptics.mediumImpact();
-                showModalBottomSheet(
-                  context: context,
-                  backgroundColor: Colors.transparent,
-                  builder: (context) => _buildCompactBottomSheet(context),
-                );
-              },
-              behavior: HitTestBehavior.translucent,
-              child: const SizedBox.expand(),
-            ),
-          ),
-          if (_isDownloading) _buildLoadingOverlay('Đang lưu ảnh...'),
-          if (_isDeleting) _buildLoadingOverlay('Đang xóa ảnh...'),
-        ],
+        ),
       ),
     );
   }

@@ -67,3 +67,8 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // Thêm thư viện hỗ trợ cử chỉ quay lại (Predictive Back) theo khuyến nghị từ Google
+    implementation("androidx.activity:activity-ktx:1.8.2")
+}
