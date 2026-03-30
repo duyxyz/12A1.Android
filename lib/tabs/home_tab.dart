@@ -41,6 +41,7 @@ class HomeTab extends StatelessWidget {
             }
 
             return MasonryGridView.count(
+              key: const PageStorageKey<String>('home-grid'),
               controller: scrollController,
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.all(4.0),
@@ -51,6 +52,7 @@ class HomeTab extends StatelessWidget {
               itemBuilder: (context, index) {
                 final image = viewModel.images[index];
                 return ImageGridItem(
+                  key: ValueKey('home-${image.sha}'),
                   image: image,
                   heroTag: 'home-${image.index}',
                 );

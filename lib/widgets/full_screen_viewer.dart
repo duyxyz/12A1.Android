@@ -245,42 +245,53 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
 
   @override
   Widget build(BuildContext context) {
+    const double backGestureInset = 24;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
-          GestureDetector(
-            onScaleStart: _onScaleStart,
-            onScaleUpdate: _onScaleUpdate,
-            onScaleEnd: _onScaleEnd,
-            onDoubleTap: _onDoubleTap,
-            onLongPress: () {
-              AppHaptics.mediumImpact();
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: Colors.transparent,
-                builder: (context) => _buildCompactBottomSheet(context),
-              );
-            },
-            behavior: HitTestBehavior.opaque,
-            child: SizedBox.expand(
-              child: Center(
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.identity()
-                    ..translate(_offset.dx, _offset.dy)
-                    ..scale(_scale),
-                  child: AspectRatio(
-                    aspectRatio: widget.image.aspectRatio,
-                    child: CachedNetworkImage(
-                      imageUrl: '${widget.image.downloadUrl}?v=${widget.image.sha}',
-                      fit: BoxFit.cover,
-                      width: double.infinity, height: double.infinity,
-                      errorWidget: (context, url, error) => Icon(Icons.error, color: Theme.of(context).colorScheme.error),
+          Positioned.fill(
+            child: Center(
+              child: Transform(
+                alignment: Alignment.center,
+                transform: Matrix4.identity()
+                  ..translate(_offset.dx, _offset.dy)
+                  ..scale(_scale),
+                child: AspectRatio(
+                  aspectRatio: widget.image.aspectRatio,
+                  child: CachedNetworkImage(
+                    imageUrl: '${widget.image.downloadUrl}?v=${widget.image.sha}',
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    errorWidget: (context, url, error) => Icon(
+                      Icons.error,
+                      color: Theme.of(context).colorScheme.error,
                     ),
                   ),
                 ),
               ),
+            ),
+          ),
+          Positioned.fill(
+            left: backGestureInset,
+            right: backGestureInset,
+            child: GestureDetector(
+              onScaleStart: _onScaleStart,
+              onScaleUpdate: _onScaleUpdate,
+              onScaleEnd: _onScaleEnd,
+              onDoubleTap: _onDoubleTap,
+              onLongPress: () {
+                AppHaptics.mediumImpact();
+                showModalBottomSheet(
+                  context: context,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => _buildCompactBottomSheet(context),
+                );
+              },
+              behavior: HitTestBehavior.translucent,
+              child: const SizedBox.expand(),
             ),
           ),
           if (_isDownloading) _buildLoadingOverlay('Đang lưu ảnh...'),

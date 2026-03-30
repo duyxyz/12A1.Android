@@ -52,6 +52,7 @@ class FavoritesTab extends StatelessWidget {
           listenable: config,
           builder: (context, _) {
             return MasonryGridView.count(
+              key: const PageStorageKey<String>('favorites-grid'),
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.all(4.0),
               crossAxisCount: config.gridColumns,
@@ -61,6 +62,7 @@ class FavoritesTab extends StatelessWidget {
               itemBuilder: (context, index) {
                 final image = favoriteImages[index];
                 return ImageGridItem(
+                  key: ValueKey('fav-${image.sha}'),
                   image: image,
                   heroTag: 'fav-${image.index}',
                 );
