@@ -36,9 +36,17 @@ jobs:
       - name: Extract Version from pubspec.yaml
         id: pubspec
         run: |
-          VERSION=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2 | cut -d '+' -f 1)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag_name=v$VERSION+${{ github.run_number }}" >> $GITHUB_OUTPUT
+          # Trích xuất version name (ví dụ: 1.1.0)
+          VERSION_NAME=$(grep '^version: ' pubspec.yaml | cut -d ' ' -f 2 | cut -d '+' -f 1)
+          # Trích xuất build number gốc (ví dụ: 3000)
+          VERSION_CODE=$(grep '^version: ' pubspec.yaml | cut -d '+' -f 2)
+          
+          # Tính toán build number mới: Lấy gốc cộng với run_number của GitHub
+          NEW_BUILD_NUMBER=$((VERSION_CODE + github.run_number))
+          
+          echo "version=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "build_number=$NEW_BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "tag_name=v$VERSION_NAME+$NEW_BUILD_NUMBER" >> $GITHUB_OUTPUT
 
       - name: Decode Keystore
         run: |
@@ -50,12 +58,10 @@ jobs:
 
       - name: Build APK (Split per ABI)
         run: |
-          BUILD_NAME="${{ steps.pubspec.outputs.version }}"
-          BUILD_NUMBER="${{ github.run_number }}"
           flutter build apk --release --split-per-abi \
             --target-platform android-arm,android-arm64 \
-            --build-name=$BUILD_NAME \
-            --build-number=$BUILD_NUMBER \
+            --build-name=${{ steps.pubspec.outputs.version }} \
+            --build-number=${{ steps.pubspec.outputs.build_number }} \
             --dart-define=GH_TOKEN=${{ secrets.GH_TOKEN }}
 
       - name: Get Commits

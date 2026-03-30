@@ -243,8 +243,6 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
 
   @override
   Widget build(BuildContext context) {
-    const double backGestureInset = 24;
-
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
@@ -273,8 +271,6 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
             ),
           ),
           Positioned.fill(
-            left: backGestureInset,
-            right: backGestureInset,
             child: GestureDetector(
               onScaleStart: _onScaleStart,
               onScaleUpdate: _onScaleUpdate,

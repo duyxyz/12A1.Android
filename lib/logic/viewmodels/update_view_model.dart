@@ -26,8 +26,14 @@ class UpdateViewModel extends ChangeNotifier {
       final release = await _updateRepository.getLatestRelease();
       final info = await PackageInfo.fromPlatform();
       final currentVersion = info.version;
+      final currentBuild = int.tryParse(info.buildNumber) ?? 0;
       
-      if (release.version != currentVersion) {
+      // So sánh version trước, sau đó là build number
+      bool isNewerVersion = _isVersionNewer(release.version, currentVersion);
+      bool isSameVersion = release.version == currentVersion;
+      bool isNewerBuild = release.buildNumber > currentBuild;
+
+      if (isNewerVersion || (isSameVersion && isNewerBuild)) {
         _latestRelease = release;
       } else {
         _latestRelease = null;
@@ -48,5 +54,16 @@ class UpdateViewModel extends ChangeNotifier {
   void clearUpdate() {
     _latestRelease = null;
     notifyListeners();
+  }
+
+  bool _isVersionNewer(String latest, String current) {
+    List<int> latestParts = latest.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+    List<int> currentParts = current.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+
+    for (int i = 0; i < latestParts.length && i < currentParts.length; i++) {
+      if (latestParts[i] > currentParts[i]) return true;
+      if (latestParts[i] < currentParts[i]) return false;
+    }
+    return latestParts.length > currentParts.length;
   }
 }

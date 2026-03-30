@@ -25,7 +25,21 @@ class AppRelease {
     );
   }
 
-  String get version => tagName.replaceAll('v', '');
+  String get version {
+    final clean = tagName.replaceAll('v', '');
+    if (clean.contains('+')) {
+      return clean.split('+').first;
+    }
+    return clean;
+  }
+
+  int get buildNumber {
+    final clean = tagName.replaceAll('v', '');
+    if (clean.contains('+')) {
+      return int.tryParse(clean.split('+').last) ?? 0;
+    }
+    return 0;
+  }
 }
 
 class AppAsset {
