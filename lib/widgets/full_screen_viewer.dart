@@ -38,6 +38,13 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
   void initState() {
     super.initState();
     _checkFavorite();
+    // Yêu cầu Focus ngay lập tức để Android 14 nhận diện được cử chỉ vuốt ngược (Predictive Back)
+    // mà không cần phải chạm vào màn hình trước
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        FocusScope.of(context).requestFocus(FocusNode());
+      }
+    });
   }
 
   Future<void> _checkFavorite() async {
@@ -271,6 +278,10 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
             ),
           ),
           Positioned.fill(
+            // Chừa một khoảng nhỏ ở biên (18px) để Android luôn nhận diện được vuốt ngược
+            // ngay từ khi vừa mở ảnh mà không bị app chiếm mất cử chỉ
+            left: _scale > 1.05 ? 0 : 18,
+            right: _scale > 1.05 ? 0 : 18,
             child: GestureDetector(
               onScaleStart: _onScaleStart,
               onScaleUpdate: _onScaleUpdate,
