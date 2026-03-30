@@ -14,12 +14,10 @@ import 'expressive_loading_indicator.dart';
 
 class FullScreenImageViewer extends StatefulWidget {
   final GalleryImage image;
-  final String heroTag;
 
   const FullScreenImageViewer({
     super.key,
     required this.image,
-    required this.heroTag,
   });
 
   @override
@@ -391,46 +389,6 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
           child: Icon(icon, size: 24),
         ),
       ),
-    );
-  }
-
-  Widget _buildBottomSheet(BuildContext context) {
-    bool isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.only(bottom: 32),
-      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(margin: const EdgeInsets.symmetric(vertical: 12), width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              children: [
-                Row(children: [
-                  Expanded(child: _buildActionBtn('Tải xuống', Colors.blue, () => _downloadImage(context), isDark)),
-                  const SizedBox(width: 12),
-                  Expanded(child: _buildActionBtn(_isFavorite ? 'Bỏ thích' : 'Yêu thích', Colors.pink, () { Navigator.pop(context); _toggleFavorite(); }, isDark)),
-                ]),
-                const SizedBox(height: 12),
-                Row(children: [
-                  Expanded(child: _buildActionBtn('Thông tin', Colors.grey, () { Navigator.pop(context); _showInfoDialog(); }, isDark)),
-                  const SizedBox(width: 12),
-                  Expanded(child: _buildActionBtn('Xóa ảnh', Colors.red, () => _deleteImage(context), isDark)),
-                ]),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionBtn(String label, Color color, VoidCallback onPressed, bool isDark) {
-    return FilledButton.tonal(
-      onPressed: onPressed,
-      style: FilledButton.styleFrom(backgroundColor: color.withOpacity(0.2), foregroundColor: isDark ? Colors.white : color, padding: const EdgeInsets.symmetric(vertical: 16)),
-      child: Text(label),
     );
   }
 

@@ -64,7 +64,6 @@ class FavoritesTab extends StatelessWidget {
                 return ImageGridItem(
                   key: ValueKey('fav-${image.sha}'),
                   image: image,
-                  heroTag: 'fav-${image.index}',
                 );
               },
             );

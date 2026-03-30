@@ -54,7 +54,6 @@ class HomeTab extends StatelessWidget {
                 return ImageGridItem(
                   key: ValueKey('home-${image.sha}'),
                   image: image,
-                  heroTag: 'home-${image.index}',
                 );
               },
             );

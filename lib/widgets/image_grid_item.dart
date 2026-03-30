@@ -7,12 +7,10 @@ import 'full_screen_viewer.dart';
 
 class ImageGridItem extends StatefulWidget {
   final GalleryImage image;
-  final String? heroTag;
 
   const ImageGridItem({
     super.key,
     required this.image,
-    this.heroTag,
   });
 
   @override
@@ -74,7 +72,6 @@ class _ImageGridItemState extends State<ImageGridItem>
             builder: (context) {
               return FullScreenImageViewer(
                 image: widget.image,
-                heroTag: widget.heroTag ?? widget.image.downloadUrl,
               );
             },
           ),
