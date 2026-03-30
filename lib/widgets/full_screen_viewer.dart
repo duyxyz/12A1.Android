@@ -31,13 +31,6 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
   double _scale = 1.0;
   double _baseScale = 1.0;
   Offset _offset = Offset.zero;
-  Offset _baseOffset = Offset.zero;
-  Offset _startFocalPoint = Offset.zero;
-
-  bool _isDismissing = false;
-  bool _isCustomDismissing = false;
-  Offset _dismissOffset = Offset.zero;
-  double _dismissScale = 1.0;
 
   AnimationController? _resetAnim;
 
@@ -66,29 +59,14 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
     super.dispose();
   }
 
-  void _onScaleStart(ScaleStartDetails details) {
+  void _onScaleStart(ScaleStartDetails _) {
     _resetAnim?.stop();
     _baseScale = _scale;
-    _baseOffset = _offset;
-    _startFocalPoint = details.localFocalPoint;
-
-    _isDismissing =
-        details.pointerCount == 1 && _scale <= 1.01 && _offset.distance < 5;
   }
 
   void _onScaleUpdate(ScaleUpdateDetails details) {
     setState(() {
       if (details.pointerCount >= 2) {
-        if (_isDismissing) {
-          _isDismissing = false;
-          _dismissOffset = Offset.zero;
-          _dismissScale = 1.0;
-          _baseScale = _scale;
-          _baseOffset = _offset;
-          _startFocalPoint = details.localFocalPoint;
-          return;
-        }
-
         final newScale = (_baseScale * details.scale).clamp(0.5, 5.0);
         final double k = newScale / _scale;
 
@@ -97,55 +75,13 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
         final focal = details.localFocalPoint;
         _offset = (focal - center) * (1 - k) + _offset * k;
         _scale = newScale;
-      } else if (_isDismissing) {
-        _dismissOffset += details.focalPointDelta;
-        _dismissScale = (1.0 - (_dismissOffset.distance / 1500)).clamp(0.6, 1.0);
       } else if (_scale > 1.01) {
         _offset += details.focalPointDelta;
       }
     });
   }
 
-  void _onScaleEnd(ScaleEndDetails details) {
-    if (_isDismissing) {
-      if (_dismissOffset.distance > 100 || details.velocity.pixelsPerSecond.distance > 500) {
-        final isBrokenFavorite = widget.heroTag.startsWith('fav-') && !_isFavorite;
-        if (isBrokenFavorite) {
-          setState(() {
-            _isDismissing = false;
-            _isCustomDismissing = true;
-          });
-          _resetAnim?.dispose();
-          _resetAnim = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
-          final startScale = _dismissScale;
-          final startOffset = _dismissOffset;
-          _resetAnim!.addListener(() {
-            if (!mounted) return;
-            setState(() {
-              final t = _resetAnim!.value;
-              _dismissScale = startScale * (1.0 - t);
-              _dismissOffset = startOffset + Offset(0, 50 * t);
-            });
-          });
-          _resetAnim!.addStatusListener((status) {
-            if (status == AnimationStatus.completed) {
-              if (mounted) Navigator.of(context).pop();
-            }
-          });
-          _resetAnim!.forward();
-          return;
-        }
-        _isDismissing = false;
-        Navigator.of(context).pop();
-      } else {
-        _isDismissing = false;
-        setState(() {
-          _dismissOffset = Offset.zero;
-          _dismissScale = 1.0;
-        });
-      }
-      return;
-    }
+  void _onScaleEnd(ScaleEndDetails _) {
     if (_scale < 1.0) {
       _animateReset(targetScale: 1.0, targetOffset: Offset.zero);
     } else if (_scale <= 1.05 && _offset.distance > 1) {
@@ -309,13 +245,8 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
 
   @override
   Widget build(BuildContext context) {
-    double bgOpacity = (_isDismissing || _isCustomDismissing)
-        ? (1.0 - (_dismissOffset.distance / 300)).clamp(0.0, 1.0)
-        : 1.0;
-    if (_isCustomDismissing && _resetAnim != null) bgOpacity *= (1.0 - _resetAnim!.value);
-
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor.withOpacity(bgOpacity),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           GestureDetector(
@@ -328,33 +259,24 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
               showModalBottomSheet(
                 context: context,
                 backgroundColor: Colors.transparent,
-                builder: (context) => _buildBottomSheet(context),
+                builder: (context) => _buildCompactBottomSheet(context),
               );
             },
             behavior: HitTestBehavior.opaque,
             child: SizedBox.expand(
-              child: Transform.translate(
-                offset: (_isDismissing || _isCustomDismissing) ? _dismissOffset : Offset.zero,
-                child: Transform.scale(
-                  scale: (_isDismissing || _isCustomDismissing) ? _dismissScale : 1.0,
-                  child: Center(
-                    child: Transform(
-                      alignment: Alignment.center,
-                      transform: Matrix4.identity()
-                        ..translate(_offset.dx, _offset.dy)
-                        ..scale(_scale),
-                      child: Hero(
-                        tag: widget.heroTag,
-                        child: AspectRatio(
-                          aspectRatio: widget.image.aspectRatio,
-                          child: CachedNetworkImage(
-                            imageUrl: '${widget.image.downloadUrl}?v=${widget.image.sha}',
-                            fit: BoxFit.cover,
-                            width: double.infinity, height: double.infinity,
-                            errorWidget: (context, url, error) => Icon(Icons.error, color: Theme.of(context).colorScheme.error),
-                          ),
-                        ),
-                      ),
+              child: Center(
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity()
+                    ..translate(_offset.dx, _offset.dy)
+                    ..scale(_scale),
+                  child: AspectRatio(
+                    aspectRatio: widget.image.aspectRatio,
+                    child: CachedNetworkImage(
+                      imageUrl: '${widget.image.downloadUrl}?v=${widget.image.sha}',
+                      fit: BoxFit.cover,
+                      width: double.infinity, height: double.infinity,
+                      errorWidget: (context, url, error) => Icon(Icons.error, color: Theme.of(context).colorScheme.error),
                     ),
                   ),
                 ),
@@ -364,6 +286,99 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
           if (_isDownloading) _buildLoadingOverlay('Đang lưu ảnh...'),
           if (_isDeleting) _buildLoadingOverlay('Đang xóa ảnh...'),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCompactBottomSheet(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildIconActionButton(
+                tooltip: 'Tai xuong',
+                icon: Icons.download_rounded,
+                color: Colors.blue,
+                isDark: isDark,
+                onPressed: () => _downloadImage(context),
+              ),
+              _buildIconActionButton(
+                tooltip: _isFavorite ? 'Bo thich' : 'Yeu thich',
+                icon: _isFavorite
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
+                color: Colors.pink,
+                isDark: isDark,
+                onPressed: () {
+                  Navigator.pop(context);
+                  _toggleFavorite();
+                },
+              ),
+              _buildIconActionButton(
+                tooltip: 'Thong tin',
+                icon: Icons.info_outline_rounded,
+                color: Colors.teal,
+                isDark: isDark,
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showInfoDialog();
+                },
+              ),
+              _buildIconActionButton(
+                tooltip: 'Xoa anh',
+                icon: Icons.delete_outline_rounded,
+                color: Colors.red,
+                isDark: isDark,
+                onPressed: () => _deleteImage(context),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIconActionButton({
+    required String tooltip,
+    required IconData icon,
+    required Color color,
+    required bool isDark,
+    required VoidCallback onPressed,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        label: tooltip,
+        child: FilledButton(
+          onPressed: onPressed,
+          style: FilledButton.styleFrom(
+            backgroundColor: color.withOpacity(0.2),
+            foregroundColor: isDark ? Colors.white : color,
+            minimumSize: const Size(56, 56),
+            padding: const EdgeInsets.all(16),
+            shape: const CircleBorder(),
+          ),
+          child: Icon(icon, size: 24),
+        ),
       ),
     );
   }

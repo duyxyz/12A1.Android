@@ -103,43 +103,32 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final homeVM = AppDependencies.instance.homeViewModel;
 
-    return PopScope(
-      canPop: _selectedIndex == 0,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        if (_selectedIndex != 0) {
-          setState(() {
-            _selectedIndex = 0;
-          });
-        }
-      },
-      child: Scaffold(
-        body: SafeArea(
-          child: ListenableBuilder(
-            listenable: homeVM,
-            builder: (context, _) {
-              return IndexedStack(
-                index: _selectedIndex,
-                children: [
-                  HomeTab(
-                    viewModel: homeVM,
-                    scrollController: _homeScrollController,
-                  ),
-                  FavoritesTab(
-                    allImages: homeVM.images,
-                    isLoading: homeVM.isLoading,
-                  ),
-                  AddTab(
-                    viewModel: homeVM,
-                  ),
-                  SettingsTab(isSelected: _selectedIndex == 3),
-                ],
-              );
-            },
-          ),
+    return Scaffold(
+      body: SafeArea(
+        child: ListenableBuilder(
+          listenable: homeVM,
+          builder: (context, _) {
+            return IndexedStack(
+              index: _selectedIndex,
+              children: [
+                HomeTab(
+                  viewModel: homeVM,
+                  scrollController: _homeScrollController,
+                ),
+                FavoritesTab(
+                  allImages: homeVM.images,
+                  isLoading: homeVM.isLoading,
+                ),
+                AddTab(
+                  viewModel: homeVM,
+                ),
+                SettingsTab(isSelected: _selectedIndex == 3),
+              ],
+            );
+          },
         ),
-        bottomNavigationBar: _buildBottomNav(),
       ),
+      bottomNavigationBar: _buildBottomNav(),
     );
   }
 

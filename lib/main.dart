@@ -73,15 +73,25 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  PageTransitionsTheme _androidPredictiveBackTransitions() {
+    return const PageTransitionsTheme(
+      builders: <TargetPlatform, PageTransitionsBuilder>{
+        TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final config = AppDependencies.instance.configViewModel;
+    final pageTransitionsTheme = _androidPredictiveBackTransitions();
 
     return ListenableBuilder(
       listenable: config,
       builder: (context, _) {
         final lightTheme = ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: config.themeColor),
+          pageTransitionsTheme: pageTransitionsTheme,
           useMaterial3: true,
         );
 
@@ -100,6 +110,7 @@ class MyApp extends StatelessWidget {
             backgroundColor: Colors.black,
             indicatorColor: Colors.transparent,
           ),
+          pageTransitionsTheme: pageTransitionsTheme,
           useMaterial3: true,
         );
 

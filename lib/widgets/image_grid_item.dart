@@ -70,17 +70,12 @@ class _ImageGridItemState extends State<ImageGridItem>
         if (!mounted) return;
 
         Navigator.of(context).push(
-          PageRouteBuilder(
-            opaque: false,
-            barrierColor: Colors.transparent,
-            pageBuilder: (context, animation, secondaryAnimation) {
+          MaterialPageRoute<void>(
+            builder: (context) {
               return FullScreenImageViewer(
                 image: widget.image,
                 heroTag: widget.heroTag ?? widget.image.downloadUrl,
               );
-            },
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
             },
           ),
         );
@@ -88,21 +83,18 @@ class _ImageGridItemState extends State<ImageGridItem>
       child: ClipRRect(
         child: AspectRatio(
           aspectRatio: widget.image.aspectRatio,
-          child: Hero(
-            tag: widget.heroTag ?? widget.image.downloadUrl,
-            child: CachedNetworkImage(
-              imageUrl: '${widget.image.downloadUrl}?v=${widget.image.sha}',
-              fit: BoxFit.cover,
-              fadeInDuration: const Duration(milliseconds: 300),
-              fadeOutDuration: const Duration(milliseconds: 300),
-              placeholder: (context, url) => const PulseSkeleton(),
-              errorWidget: (context, url, error) => Container(
-                color: Theme.of(context).colorScheme.errorContainer,
-                child: Icon(
-                  Icons.image_not_supported_rounded,
-                  color: Theme.of(context).colorScheme.error,
-                  size: 24,
-                ),
+          child: CachedNetworkImage(
+            imageUrl: '${widget.image.downloadUrl}?v=${widget.image.sha}',
+            fit: BoxFit.cover,
+            fadeInDuration: const Duration(milliseconds: 300),
+            fadeOutDuration: const Duration(milliseconds: 300),
+            placeholder: (context, url) => const PulseSkeleton(),
+            errorWidget: (context, url, error) => Container(
+              color: Theme.of(context).colorScheme.errorContainer,
+              child: Icon(
+                Icons.image_not_supported_rounded,
+                color: Theme.of(context).colorScheme.error,
+                size: 24,
               ),
             ),
           ),
