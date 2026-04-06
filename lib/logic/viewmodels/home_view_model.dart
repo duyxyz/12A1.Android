@@ -19,6 +19,16 @@ class HomeViewModel extends ChangeNotifier {
 
   Future<void> loadImages() async {
     if (_isLoading) return;
+
+    // 1. Tải từ Cache trước để giao diện hiện lên ngay lập tức (chỉ khi danh sách hiện tại trống)
+    if (_images.isEmpty) {
+      final cached = await _imageRepository.getCachedImages();
+      if (cached.isNotEmpty) {
+        _images = cached;
+        notifyListeners();
+      }
+    }
+
     _isLoading = true;
     _error = "";
     notifyListeners();
@@ -29,7 +39,10 @@ class HomeViewModel extends ChangeNotifier {
       _setupRealtimeSubscription();
       notifyListeners();
     } catch (e) {
-      _error = e.toString();
+      // Nếu đã có dữ liệu từ cache thì không cần hiện thông báo lỗi quá nghiêm trọng
+      if (_images.isEmpty) {
+        _error = e.toString();
+      }
       _isLoading = false;
       notifyListeners();
     }

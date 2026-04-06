@@ -93,6 +93,9 @@ class _ImageGridItemState extends State<ImageGridItem>
             child: CachedNetworkImage(
               imageUrl: '${widget.image.downloadUrl}?v=${widget.image.sha}',
               fit: BoxFit.cover,
+              // Giới hạn kích thước giải mã để tiết kiệm RAM và CPU
+              // 400px là mức an toàn cho Grid 2-4 cột trên di động
+              memCacheWidth: (400 * MediaQuery.of(context).devicePixelRatio).round(),
               fadeInDuration: const Duration(milliseconds: 300),
               fadeOutDuration: const Duration(milliseconds: 300),
               placeholder: (context, url) => const PulseSkeleton(),

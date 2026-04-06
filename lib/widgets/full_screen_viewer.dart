@@ -351,6 +351,8 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
                             imageUrl: '${widget.image.downloadUrl}?v=${widget.image.sha}',
                             fit: BoxFit.cover,
                             width: double.infinity, height: double.infinity,
+                            // Giới hạn giải mã theo chiều rộng màn hình để tránh quá tải CPU/RAM cho ảnh cực lớn
+                            memCacheWidth: (MediaQuery.of(context).size.width * MediaQuery.of(context).devicePixelRatio).round(),
                             errorWidget: (context, url, error) => Icon(Icons.error, color: Theme.of(context).colorScheme.error),
                           ),
                         ),

@@ -46,6 +46,18 @@ class GalleryImage {
     );
   }
 
+  factory GalleryImage.fromJson(Map<String, dynamic> json) {
+    return GalleryImage(
+      name: json['name'],
+      path: json['path'],
+      sha: json['sha'],
+      size: json['size'],
+      downloadUrl: json['download_url'],
+      index: json['index'],
+      aspectRatio: (json['aspect_ratio'] as num).toDouble(),
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'name': name,

@@ -1,13 +1,37 @@
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/gallery_image.dart';
 import '../services/github_api_service.dart';
 import '../services/supabase_api_service.dart';
 import 'dart:typed_data';
 
 class ImageRepository {
+  static const String _cacheKey = 'local_image_metadata';
   final GithubApiService _githubApi;
   final SupabaseApiService _supabaseApi;
 
   ImageRepository(this._githubApi, this._supabaseApi);
+
+  Future<List<GalleryImage>> getCachedImages() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedData = prefs.getString(_cacheKey);
+      if (cachedData == null) return [];
+
+      final List<dynamic> decoded = jsonDecode(cachedData);
+      return decoded.map((item) => GalleryImage.fromJson(item)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<void> _saveToCache(List<GalleryImage> images) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final encoded = jsonEncode(images.map((img) => img.toJson()).toList());
+      await prefs.setString(_cacheKey, encoded);
+    } catch (_) {}
+  }
 
   Future<List<GalleryImage>> getImages() async {
     // 1. Fetch metadata from Supabase
@@ -36,6 +60,10 @@ class ImageRepository {
     }).toList();
 
     images.sort((a, b) => b.index.compareTo(a.index));
+    
+    // Cập nhật bộ nhớ đệm bất cứ khi nào tải dữ liệu mới thành công
+    _saveToCache(images);
+    
     return images;
   }
 
