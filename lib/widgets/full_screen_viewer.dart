@@ -10,7 +10,6 @@ import '../main.dart';
 import '../data/models/gallery_image.dart';
 import '../utils/haptics.dart';
 import '../services/favorite_service.dart';
-import 'expressive_loading_indicator.dart';
 
 class FullScreenImageViewer extends StatefulWidget {
   final GalleryImage image;
@@ -38,7 +37,6 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
   bool _isCustomDismissing = false;
   Offset _dismissOffset = Offset.zero;
   double _dismissScale = 1.0;
-
   AnimationController? _resetAnim;
 
   bool _isFavorite = false;
@@ -352,6 +350,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
                             fit: BoxFit.cover,
                             width: double.infinity,
                             height: double.infinity,
+                            placeholder: (context, url) => const _RotatingLoader(),
                             errorWidget: (context, url, error) => Icon(Icons.error, color: Theme.of(context).colorScheme.error),
                           ),
                         ),
@@ -426,10 +425,64 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
           child: Padding(
             padding: const EdgeInsets.all(20.0),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const ExpressiveLoadingIndicator(isContained: true),
+              const _RotatingLoader(),
               const SizedBox(height: 16),
               Text(text),
             ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RotatingLoader extends StatefulWidget {
+  const _RotatingLoader();
+
+  @override
+  State<_RotatingLoader> createState() => _RotatingLoaderState();
+}
+
+class _RotatingLoaderState extends State<_RotatingLoader> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final themeColor = Theme.of(context).colorScheme.primary;
+    
+    return Center(
+      child: Container(
+        width: 72,
+        height: 72,
+        decoration: BoxDecoration(
+          color: themeColor.withOpacity(0.15),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: RotationTransition(
+            turns: _controller,
+            child: Image.asset(
+              'lib/assets/loading-indicator.png',
+              width: 48,
+              height: 48,
+              color: themeColor,
+              colorBlendMode: BlendMode.srcIn,
+            ),
           ),
         ),
       ),
