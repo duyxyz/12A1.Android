@@ -55,7 +55,7 @@ class GithubApiService {
     }
   }
 
-  Future<void> uploadImage(String filename, Uint8List fileBytes) async {
+  Future<Map<String, dynamic>> uploadImage(String filename, Uint8List fileBytes) async {
     final base64Image = base64Encode(fileBytes);
     final response = await http
         .put(
@@ -70,7 +70,9 @@ class GithubApiService {
 
     _updateRateLimit(response);
 
-    if (response.statusCode != 201 && response.statusCode != 200) {
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
       throw Exception('Failed to upload image: ${response.body}');
     }
   }

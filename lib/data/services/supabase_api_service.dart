@@ -15,11 +15,17 @@ class SupabaseApiService {
 
   Future<void> upsertImageMetadata({
     required int index,
+    required String name,
+    required String sha,
+    required int size,
     required int width,
     required int height,
   }) async {
     await _client.from('images').upsert({
       'image_index': index,
+      'name': name,
+      'sha': sha,
+      'size': size,
       'width': width,
       'height': height,
       'aspect_ratio': width / height,

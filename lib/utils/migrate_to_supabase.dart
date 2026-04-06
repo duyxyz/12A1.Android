@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../main.dart';
 
@@ -22,12 +21,18 @@ class MigrationUtility {
       for (var item in jsonData) {
         if (item is Map) {
           final id = num.tryParse(item['i']?.toString() ?? '')?.toInt();
+          final name = item['n']?.toString();
+          final sha = item['sha']?.toString();
+          final size = num.tryParse(item['s']?.toString() ?? '')?.toInt();
           final w = num.tryParse(item['w']?.toString() ?? '')?.toInt();
           final h = num.tryParse(item['h']?.toString() ?? '')?.toInt();
 
           if (id != null && w != null && h != null && h != 0) {
             toUpsert.add({
               'image_index': id,
+              'name': name,
+              'sha': sha,
+              'size': size,
               'width': w,
               'height': h,
               'aspect_ratio': (w / h).toDouble(),
@@ -36,13 +41,18 @@ class MigrationUtility {
         }
       }
 
-      if (toUpsert.isNotEmpty) {
-        await AppDependencies.instance.imageRepository.bulkUpsertMetadata(toUpsert);
+      if (toUpsert.isEmpty) {
+        return 'Không tìm thấy dữ liệu hợp lệ trong images.json';
       }
 
-      return 'Thành công đồng bộ ${toUpsert.length} ảnh!';
+      try {
+        await AppDependencies.instance.imageRepository.bulkUpsertMetadata(toUpsert);
+        return 'Thành công đồng bộ ${toUpsert.length} ảnh sang Supabase!';
+      } catch (dbError) {
+        return 'Lỗi lưu vào Supabase: $dbError';
+      }
     } catch (e) {
-      return 'Lỗi migration: $e';
+      return 'Lỗi hệ thống: $e';
     }
   }
 }
