@@ -27,7 +27,7 @@ class UpdateViewModel extends ChangeNotifier {
       final info = await PackageInfo.fromPlatform();
       final currentVersion = info.version;
       
-      if (release.version != currentVersion) {
+      if (_isNewerVersion(release.version, currentVersion)) {
         _latestRelease = release;
       } else {
         _latestRelease = null;
@@ -38,6 +38,25 @@ class UpdateViewModel extends ChangeNotifier {
       _error = e.toString();
       _isChecking = false;
       notifyListeners();
+    }
+  }
+
+  bool _isNewerVersion(String remote, String local) {
+    try {
+      List<int> remoteParts = remote.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+      List<int> localParts = local.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+
+      int maxLength = remoteParts.length > localParts.length ? remoteParts.length : localParts.length;
+
+      for (int i = 0; i < maxLength; i++) {
+        int r = i < remoteParts.length ? remoteParts[i] : 0;
+        int l = i < localParts.length ? localParts[i] : 0;
+        if (r > l) return true;
+        if (r < l) return false;
+      }
+      return false;
+    } catch (_) {
+      return remote != local;
     }
   }
 

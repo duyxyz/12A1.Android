@@ -38,11 +38,14 @@ jobs:
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=upload-keystore.jks" >> android/key.properties
 
+      - name: Get current date
+        id: date
+        run: echo "today=$(date +'%Y.%m.%d')" >> $GITHUB_OUTPUT
+
       - name: Build APK (Split per ABI)
         run: |
-          # Tính toán build number từ run_number của GitHub
-          # Giả sử bắt đầu từ 1.0.0, mỗi lần build sẽ tăng version: 1.0.<run_number>
-          BUILD_NAME="1.0.${{ github.run_number }}"
+          # Sử dụng ngày tháng kết hợp với run_number để làm version
+          BUILD_NAME="${{ steps.date.outputs.today }}.${{ github.run_number }}"
           BUILD_NUMBER="${{ github.run_number }}"
           flutter build apk --release --split-per-abi \
             --target-platform android-arm,android-arm64 \
@@ -52,7 +55,7 @@ jobs:
 
       - name: Generate Release Tag
         id: tag
-        run: echo "tag_name=v1.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
+        run: echo "tag_name=v${{ steps.date.outputs.today }}.${{ github.run_number }}" >> $GITHUB_OUTPUT
 
       - name: Get Commits
         id: commits

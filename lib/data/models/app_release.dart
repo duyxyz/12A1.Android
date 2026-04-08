@@ -25,7 +25,20 @@ class AppRelease {
     );
   }
 
-  String get version => tagName.replaceAll('v', '');
+  String get version {
+    // Loại bỏ tiền tố 'v' và các khoảng trắng
+    String cleaned = tagName.toLowerCase().replaceFirst('v', '').trim();
+    
+    // Chuẩn hóa: Biến "2024.04.09" thành "2024.4.9" để khớp với PackageInfo của Flutter
+    try {
+      return cleaned.split('.').map((part) {
+        final parsed = int.tryParse(part);
+        return parsed != null ? parsed.toString() : part;
+      }).join('.');
+    } catch (_) {
+      return cleaned;
+    }
+  }
 }
 
 class AppAsset {
