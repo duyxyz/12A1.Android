@@ -344,28 +344,32 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer>
                       transform: Matrix4.identity()
                         ..translate(_offset.dx, _offset.dy)
                         ..scale(_scale),
-                          child: Hero(
-                            tag: widget.heroTag,
-                            child: AspectRatio(
-                              aspectRatio: widget.image.aspectRatio,
-                              child: CachedNetworkImage(
-                                imageUrl:
-                                    '${widget.image.downloadUrl}?v=${widget.image.sha}',
+                        child: Hero(
+                          tag: widget.heroTag,
+                          child: AspectRatio(
+                            aspectRatio: widget.image.aspectRatio,
+                            child: CachedNetworkImage(
+                              imageUrl:
+                                  '${widget.image.downloadUrl}?v=${widget.image.sha}',
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                              fadeInDuration: Duration.zero,
+                              fadeOutDuration: Duration.zero,
+                              placeholder: (context, url) => CachedNetworkImage(
+                                imageUrl: url,
                                 fit: BoxFit.cover,
-                                width: double.infinity,
-                                height: double.infinity,
-                                placeholder: (context, url) => CachedNetworkImage(
-                                  imageUrl: url,
-                                  fit: BoxFit.cover,
-                                  memCacheWidth:
-                                      (400 * MediaQuery.of(context).devicePixelRatio).round(),
-                                  placeholder: (context, url) => const _RotatingLoader(),
-                                ),
-                                errorWidget: (context, url, error) => Icon(Icons.error,
-                                    color: Theme.of(context).colorScheme.error),
+                                fadeInDuration: Duration.zero,
+                                fadeOutDuration: Duration.zero,
+                                memCacheWidth:
+                                    (400 * MediaQuery.of(context).devicePixelRatio).round(),
+                                placeholder: (context, url) => const _RotatingLoader(),
                               ),
+                              errorWidget: (context, url, error) => Icon(Icons.error,
+                                  color: Theme.of(context).colorScheme.error),
                             ),
                           ),
+                        ),
                     ),
                   ),
                 ),
