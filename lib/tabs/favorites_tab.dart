@@ -20,6 +20,7 @@ class FavoritesTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final config = AppDependencies.instance.configViewModel;
     final appBarBorder = Theme.of(context).dividerColor.withValues(alpha: 0.2);
+    final appBarTextColor = Theme.of(context).colorScheme.primary;
 
     return ValueListenableBuilder<Set<String>>(
       valueListenable: FavoriteService.favoritesNotifier,
@@ -37,11 +38,12 @@ class FavoritesTab extends StatelessWidget {
             elevation: 0,
             shadowColor: Colors.transparent,
             titleSpacing: 16,
-            title: const Text(
+            title: Text(
               'Yêu thích',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
+                color: appBarTextColor,
               ),
             ),
             centerTitle: false,
@@ -53,6 +55,7 @@ class FavoritesTab extends StatelessWidget {
                     '${favoriteImages.length} ảnh',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
+                          color: appBarTextColor,
                         ),
                   ),
                 ),

@@ -139,11 +139,24 @@ class AddTabState extends State<AddTab> {
       );
     }
 
+    final appBarTextColor = Theme.of(context).colorScheme.primary;
+    final appBarDisabledColor =
+        Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38);
+    final canClearOrUpload = _selectedImages.isNotEmpty && !_isLocalLoading;
+
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        elevation: 0,
+        shadowColor: Colors.transparent,
         leading: IconButton(
-          onPressed: (_selectedImages.isNotEmpty && !_isLocalLoading) ? _clearSelection : null,
-          icon: const Icon(Icons.delete_sweep_rounded),
+          onPressed: canClearOrUpload ? _clearSelection : null,
+          icon: Icon(
+            Icons.delete_sweep_rounded,
+            color: canClearOrUpload ? appBarTextColor : appBarDisabledColor,
+          ),
           tooltip: 'Xóa hết',
         ),
         title: Text(
@@ -151,9 +164,7 @@ class AddTabState extends State<AddTab> {
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
-            color: (_selectedImages.isEmpty || _isLocalLoading)
-                ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38)
-                : null,
+            color: canClearOrUpload ? appBarTextColor : appBarDisabledColor,
           ),
         ),
         centerTitle: true,
@@ -161,8 +172,11 @@ class AddTabState extends State<AddTab> {
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: FilledButton.tonal(
-              onPressed: (_selectedImages.isNotEmpty && !_isLocalLoading) ? _uploadImages : null,
-              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 16)),
+              onPressed: canClearOrUpload ? _uploadImages : null,
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                foregroundColor: appBarTextColor,
+              ),
               child: const Text('Tải lên', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ),

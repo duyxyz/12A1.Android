@@ -22,6 +22,7 @@ class HomeTab extends StatelessWidget {
     final showSkeletons = viewModel.isLoading && viewModel.images.isEmpty;
     final gridConfig = AppDependencies.instance.configViewModel;
     final appBarBorder = Theme.of(context).dividerColor.withValues(alpha: 0.2);
+    final appBarTextColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       appBar: AppBar(
@@ -32,11 +33,12 @@ class HomeTab extends StatelessWidget {
         elevation: 0,
         shadowColor: Colors.transparent,
         titleSpacing: 16,
-        title: const Text(
+        title: Text(
           'Gay Group',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
+            color: appBarTextColor,
           ),
         ),
         centerTitle: false,
@@ -48,6 +50,7 @@ class HomeTab extends StatelessWidget {
                 '${viewModel.images.length} ảnh',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
+                      color: appBarTextColor,
                     ),
               ),
             ),
