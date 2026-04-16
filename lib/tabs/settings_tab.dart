@@ -102,8 +102,9 @@ class SettingsTabState extends State<SettingsTab>
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         ),
       ),
-      child: Builder(
-        builder: (context) => CustomScrollView(
+      child: ListenableBuilder(
+        listenable: config,
+        builder: (context, _) => CustomScrollView(
           primary: true,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
