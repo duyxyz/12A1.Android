@@ -11,7 +11,7 @@ class AppConfigViewModel extends ChangeNotifier {
   int _themeIndex = 0;
   Color _themeColor = Colors.blueAccent;
   bool _hapticsEnabled = true;
-  int _gridColumns = 2;
+  int _gridColumns = 3;
   String _apiRemaining = 'Đang kiểm tra...';
 
   int get themeIndex => _themeIndex;
@@ -36,7 +36,7 @@ class AppConfigViewModel extends ChangeNotifier {
     if (_themeIndex == 3) _themeIndex = 2; // Migrate legacy OLED mode
     _themeColor = Color(_prefs.getInt('themeColor') ?? Colors.blueAccent.value);
     _hapticsEnabled = _prefs.getBool('hapticsEnabled') ?? true;
-    _gridColumns = _prefs.getInt('gridColumns') ?? 2;
+    _gridColumns = _prefs.getInt('gridColumns') ?? 3;
     notifyListeners();
   }
 
