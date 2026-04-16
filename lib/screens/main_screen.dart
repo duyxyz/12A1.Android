@@ -8,6 +8,7 @@ import '../tabs/settings_tab.dart';
 import '../utils/update_manager.dart';
 import '../logic/viewmodels/home_view_model.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import '../widgets/update_bottom_sheet.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -66,26 +67,7 @@ class _MainScreenState extends State<MainScreen>
   }
 
   void _showUpdateDialog(BuildContext context, dynamic release) {
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('Cập nhật ứng dụng'),
-        content: Text('Đã có phiên bản mới ${release.tagName}'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Để sau'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(dialogCtx);
-              startUpdateProcess(context, release);
-            },
-            child: const Text('Cập nhật'),
-          ),
-        ],
-      ),
-    );
+    UpdateBottomSheet.show(context, release);
   }
 
   @override

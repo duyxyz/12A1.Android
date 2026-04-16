@@ -6,9 +6,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../main.dart';
 import '../utils/haptics.dart';
-import '../utils/update_manager.dart';
 import '../utils/migrate_to_supabase.dart';
 import '../widgets/expressive_loading_indicator.dart';
+import '../widgets/update_bottom_sheet.dart';
 
 class SettingsTab extends StatefulWidget {
   final bool isSelected;
@@ -357,26 +357,7 @@ class SettingsTabState extends State<SettingsTab>
   }
 
   void _showManualUpdateDialog(BuildContext context, dynamic release) {
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('Cập nhật ứng dụng'),
-        content: Text('Đã phiên bản mới ${release.tagName}'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Để sau'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(dialogCtx);
-              startUpdateProcess(context, release);
-            },
-            child: const Text('Cập nhật'),
-          ),
-        ],
-      ),
-    );
+    UpdateBottomSheet.show(context, release);
   }
 
   Widget _buildCacheTile(BuildContext context) {
