@@ -209,6 +209,18 @@ class _MainScreenState extends State<MainScreen>
                       onMenuPressed: () =>
                           _scaffoldKey.currentState?.openDrawer(),
                       onAddPressed: _pickAndUploadImages,
+                      onTitleTap: () {
+                        _nestedScrollController.animateTo(
+                          0,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOutQuart,
+                        );
+                        if (_currentIndex == 0) {
+                          _homeTabKey.currentState?.scrollToTop();
+                        } else {
+                          _favoritesTabKey.currentState?.scrollToTop();
+                        }
+                      },
                       tabBar: TabBar(
                         controller: _tabController,
                         indicatorSize: TabBarIndicatorSize.label,
@@ -218,16 +230,6 @@ class _MainScreenState extends State<MainScreen>
                         ).colorScheme.onSurfaceVariant,
                         indicatorColor: appBarTextColor,
                         dividerColor: Colors.transparent,
-                        onTap: (index) {
-                          if (index == 0 && _currentIndex == 0) {
-                            _nestedScrollController.animateTo(
-                              0,
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeOutQuart,
-                            );
-                            _homeTabKey.currentState?.scrollToTop();
-                          }
-                        },
                         tabs: const [
                           Tab(text: "Trang chủ"),
                           Tab(text: "Yêu thích"),
@@ -261,6 +263,7 @@ class _MainAppBarDelegate extends SliverPersistentHeaderDelegate {
   final Widget tabBar;
   final VoidCallback onMenuPressed;
   final VoidCallback onAddPressed;
+  final VoidCallback onTitleTap;
 
   _MainAppBarDelegate({
     required this.paddingTop,
@@ -271,6 +274,7 @@ class _MainAppBarDelegate extends SliverPersistentHeaderDelegate {
     required this.tabBar,
     required this.onMenuPressed,
     required this.onAddPressed,
+    required this.onTitleTap,
   });
 
   @override
@@ -324,12 +328,15 @@ class _MainAppBarDelegate extends SliverPersistentHeaderDelegate {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        'Gay Group',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 22,
-                          color: appBarTextColor,
+                      child: GestureDetector(
+                        onTap: onTitleTap,
+                        child: Text(
+                          'Gay Group',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 22,
+                            color: appBarTextColor,
+                          ),
                         ),
                       ),
                     ),
