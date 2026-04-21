@@ -1,4 +1,4 @@
-# Tài liệu Chuyên sâu: Nguyên lý hoạt động của 12A1.Android
+# Tài liệu Chuyên sâu: Nguyên lý hoạt động của GG.A
 
 Tài liệu này giải thích chi tiết cách các tệp tin phối hợp với nhau để vận hành ứng dụng.
 

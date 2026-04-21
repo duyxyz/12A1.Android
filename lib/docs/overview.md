@@ -1,4 +1,4 @@
-# Tổng quan kiến trúc dự án 12A1.Android
+# Tổng quan kiến trúc dự án GG.A
 
 Dự án được xây dựng theo kiến trúc phân lớp (Layered Architecture) kết hợp với mô hình MVVM (Model-ViewModel-ViewModel) để đảm bảo tính tách biệt giữa giao diện và logic nghiệp vụ.
 

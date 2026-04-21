@@ -47,8 +47,8 @@ class AppDependencies {
     final githubApi = GithubApiService(
       token: const String.fromEnvironment('GH_TOKEN'),
       owner: 'duyxyz',
-      imageRepo: '12A1.Galary',
-      appRepo: '12A1.Android',
+      imageRepo: 'GG.G',
+      appRepo: 'GG.A',
       onRateLimitUpdate: configViewModel.updateApiRemaining,
     );
     final supabaseApi = SupabaseApiService(Supabase.instance.client);

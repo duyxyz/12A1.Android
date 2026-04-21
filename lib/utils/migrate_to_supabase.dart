@@ -7,7 +7,7 @@ class MigrationUtility {
     try {
       final response = await http.get(
         Uri.parse(
-          'https://raw.githubusercontent.com/duyxyz/12A1.Galary/main/images.json',
+          'https://raw.githubusercontent.com/duyxyz/GG.G/main/images.json',
         ),
       );
 
@@ -46,7 +46,9 @@ class MigrationUtility {
       }
 
       try {
-        await AppDependencies.instance.imageRepository.bulkUpsertMetadata(toUpsert);
+        await AppDependencies.instance.imageRepository.bulkUpsertMetadata(
+          toUpsert,
+        );
         return 'Thành công đồng bộ ${toUpsert.length} ảnh sang Supabase!';
       } catch (dbError) {
         return 'Lỗi lưu vào Supabase: $dbError';

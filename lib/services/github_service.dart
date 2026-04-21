@@ -12,8 +12,8 @@ class GithubService {
   }
 
   static const String owner = 'duyxyz';
-  static const String imageRepo = '12A1.Galary';
-  static const String appRepo = '12A1.Android';
+  static const String imageRepo = 'GG.G';
+  static const String appRepo = 'GG.A';
   static const String baseUrl =
       'https://api.github.com/repos/$owner/$imageRepo/contents';
 
@@ -22,9 +22,7 @@ class GithubService {
   );
 
   static Map<String, String> get headers {
-    final result = <String, String>{
-      'Accept': 'application/vnd.github.v3+json',
-    };
+    final result = <String, String>{'Accept': 'application/vnd.github.v3+json'};
     if (token.isNotEmpty) {
       result['Authorization'] = 'token $token';
     }
@@ -111,7 +109,10 @@ class GithubService {
         .delete(
           Uri.parse('$baseUrl/$path'),
           headers: headers,
-          body: jsonEncode({'message': 'Delete $path (Android App)', 'sha': sha}),
+          body: jsonEncode({
+            'message': 'Delete $path (Android App)',
+            'sha': sha,
+          }),
         )
         .timeout(const Duration(seconds: 30));
     _updateRateLimit(response);
