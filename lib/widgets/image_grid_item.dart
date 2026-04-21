@@ -28,35 +28,6 @@ class _ImageGridItemState extends State<ImageGridItem>
       onTap: () async {
         AppHaptics.selectionClick();
 
-        final RenderBox? box = context.findRenderObject() as RenderBox?;
-        if (box != null) {
-          final position = box.localToGlobal(Offset.zero);
-          final bottom = position.dy + box.size.height;
-          final screenHeight = MediaQuery.of(context).size.height;
-
-          final viewportBottom =
-              screenHeight - 48.0; // Updated for new TabBar height
-          final topThreshold = MediaQuery.of(context).padding.top + 48.0;
-
-          if (bottom > viewportBottom) {
-            Scrollable.ensureVisible(
-              context,
-              duration: const Duration(milliseconds: 200),
-              alignment: 1.0,
-              curve: Curves.easeOut,
-            );
-          } else if (position.dy < topThreshold) {
-            Scrollable.ensureVisible(
-              context,
-              duration: const Duration(milliseconds: 200),
-              alignment: 0.0,
-              curve: Curves.easeOut,
-            );
-          }
-        }
-
-        if (!mounted) return;
-
         Navigator.of(context).push(
           PageRouteBuilder(
             opaque: false,
