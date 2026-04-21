@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -32,16 +33,17 @@ class AppDependencies {
 
   static Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     // 1. Initialize Supabase
     const supabaseUrl = 'https://pplwdupvhmypmkjxcxpr.supabase.co';
-    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwbHdkdXB2aG15cG1ranhjeHByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNTc3NzEsImV4cCI6MjA4ODYzMzc3MX0.UikH-oZ3vC72RL8PPIzgUr6N12Mq6Pk8aGLqri7PGiM';
+    const supabaseAnonKey =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwbHdkdXB2aG15cG1ranhjeHByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNTc3NzEsImV4cCI6MjA4ODYzMzc3MX0.UikH-oZ3vC72RL8PPIzgUr6N12Mq6Pk8aGLqri7PGiM';
     await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
-    
+
     // 2. Core ViewModels & Services
     final configViewModel = AppConfigViewModel(prefs);
     await FavoriteService.init();
-    
+
     final githubApi = GithubApiService(
       token: const String.fromEnvironment('GH_TOKEN'),
       owner: 'duyxyz',
@@ -67,6 +69,16 @@ class AppDependencies {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarDividerColor: Colors.transparent,
+      statusBarColor: Colors.transparent,
+    ),
+  );
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
   await AppDependencies.init();
   runApp(const MyApp());
 }
@@ -96,7 +108,10 @@ class MyApp extends StatelessWidget {
             surfaceContainerHigh: const Color(0xFF1A1A1A),
           ),
           scaffoldBackgroundColor: Colors.black,
-          appBarTheme: const AppBarTheme(backgroundColor: Colors.black, elevation: 0),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Colors.black,
+            elevation: 0,
+          ),
           navigationBarTheme: const NavigationBarThemeData(
             backgroundColor: Colors.black,
             indicatorColor: Colors.transparent,

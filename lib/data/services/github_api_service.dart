@@ -35,9 +35,9 @@ class GithubApiService {
   void _updateRateLimit(http.BaseResponse response) {
     if (onRateLimitUpdate != null &&
         response.headers.containsKey('x-ratelimit-remaining')) {
-      onRateLimitUpdate!(
-        response.headers['x-ratelimit-remaining'] ?? 'Unknown',
-      );
+      final remaining = response.headers['x-ratelimit-remaining'] ?? '?';
+      final limit = response.headers['x-ratelimit-limit'] ?? '?';
+      onRateLimitUpdate!('$remaining / $limit');
     }
   }
 
