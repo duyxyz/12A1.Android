@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:path_provider/path_provider.dart';
@@ -117,27 +116,7 @@ class SettingsTabState extends State<SettingsTab>
                     children: [
                       _buildThemeModeTile(context, config),
                       const Divider(height: 1, indent: 48),
-                      _buildThemeColorTile(context, config),
-                      const Divider(height: 1, indent: 48),
                       _buildGridColumnsTile(context, config),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  _buildSectionCard(
-                    title: 'Hệ thống & Trải nghiệm',
-                    children: [
-                      SwitchListTile(
-                        title: const Text(
-                          'Phản hồi rung',
-                          style: TextStyle(fontSize: 14),
-                        ),
-                        secondary: const Icon(Icons.vibration_rounded),
-                        value: config.hapticsEnabled,
-                        onChanged: (v) {
-                          config.setHapticsEnabled(v);
-                          if (v) AppHaptics.lightImpact();
-                        },
-                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -254,26 +233,6 @@ class SettingsTabState extends State<SettingsTab>
           }
         },
       ),
-    );
-  }
-
-  Widget _buildThemeColorTile(BuildContext context, dynamic config) {
-    return ListTile(
-      leading: const Icon(Icons.palette_outlined),
-      title: const Text('Màu Sắc', style: TextStyle(fontSize: 14)),
-      trailing: Container(
-        width: 28,
-        height: 28,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.grey.withValues(alpha: 0.3),
-            width: 1,
-          ),
-        ),
-      ),
-      onTap: () => _showAreaColorPicker(context, config),
     );
   }
 
@@ -453,176 +412,4 @@ class SettingsTabState extends State<SettingsTab>
       ),
     );
   }
-
-  void _showAreaColorPicker(BuildContext context, dynamic config) {
-    HSVColor hsv = HSVColor.fromColor(config.themeColor);
-    double hue = hsv.hue;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            title: const Text('Chọn màu chủ đạo'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Chạm vào vòng tròn để chọn tông màu',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: 200,
-                  height: 200,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      CustomPaint(
-                        size: const Size(200, 200),
-                        painter: ColorWheelPainter(),
-                      ),
-                      GestureDetector(
-                        onPanUpdate: (details) {
-                          final double centerX = 100, centerY = 100;
-                          final double dx = details.localPosition.dx - centerX,
-                              dy = details.localPosition.dy - centerY;
-                          double angle = atan2(dy, dx) * (180 / pi);
-                          angle = (angle + 90) % 360;
-                          if (angle < 0) angle += 360;
-                          setDialogState(() => hue = angle);
-                        },
-                        onTapDown: (details) {
-                          final double centerX = 100, centerY = 100;
-                          final double dx = details.localPosition.dx - centerX,
-                              dy = details.localPosition.dy - centerY;
-                          double angle = atan2(dy, dx) * (180 / pi);
-                          angle = (angle + 90) % 360;
-                          if (angle < 0) angle += 360;
-                          setDialogState(() => hue = angle);
-                        },
-                        child: Container(
-                          width: 200,
-                          height: 200,
-                          decoration: const BoxDecoration(
-                            color: Colors.transparent,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                      IgnorePointer(
-                        child: Transform.rotate(
-                          angle: (hue - 90) * (pi / 180),
-                          child: Stack(
-                            children: [
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: Container(
-                                  margin: const EdgeInsets.only(right: 5),
-                                  width: 20,
-                                  height: 20,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white,
-                                    border: Border.all(
-                                      color: Colors.black26,
-                                      width: 2,
-                                    ),
-                                    boxShadow: const [
-                                      BoxShadow(
-                                        color: Colors.black26,
-                                        blurRadius: 4,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: ColorScheme.fromSeed(
-                            seedColor: HSVColor.fromAHSV(
-                              1.0,
-                              hue,
-                              0.8,
-                              0.9,
-                            ).toColor(),
-                            brightness: Theme.of(context).brightness,
-                          ).primary,
-                          border: Border.all(color: Colors.white, width: 3),
-                          boxShadow: const [
-                            BoxShadow(color: Colors.black12, blurRadius: 8),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Màu đang chọn: #${HSVColor.fromAHSV(1.0, hue, 0.8, 0.9).toColor().toARGB32().toRadixString(16).substring(2).toUpperCase()}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Hủy'),
-              ),
-              FilledButton(
-                onPressed: () {
-                  final finalColor = HSVColor.fromAHSV(
-                    1.0,
-                    hue,
-                    0.8,
-                    0.9,
-                  ).toColor();
-                  config.setThemeColor(finalColor);
-                  if (context.mounted) Navigator.pop(context);
-                  AppHaptics.mediumImpact();
-                },
-                child: const Text('Lưu màu'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class ColorWheelPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-    const segments = 360;
-    final sweepAngle = (2 * pi) / segments;
-    for (int i = 0; i < segments; i++) {
-      final paint = Paint()
-        ..color = HSVColor.fromAHSV(1.0, i.toDouble(), 0.8, 0.9).toColor()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 40;
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius - 20),
-        (i - 90) * (pi / 180),
-        sweepAngle + 0.02,
-        false,
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

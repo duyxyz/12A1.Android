@@ -9,14 +9,12 @@ class AppConfigViewModel extends ChangeNotifier {
   }
 
   int _themeIndex = 0;
-  Color _themeColor = Colors.blueAccent;
-  bool _hapticsEnabled = true;
   int _gridColumns = 3;
   String _apiRemaining = 'Đang kiểm tra...';
 
   int get themeIndex => _themeIndex;
-  Color get themeColor => _themeColor;
-  bool get hapticsEnabled => _hapticsEnabled;
+  bool get hapticsEnabled =>
+      true; // Constant true if needed by other files, or remove fully if possible
   int get gridColumns => _gridColumns;
   String get apiRemaining => _apiRemaining;
 
@@ -34,10 +32,6 @@ class AppConfigViewModel extends ChangeNotifier {
   void _loadSettings() {
     _themeIndex = _prefs.getInt('themeMode') ?? 0;
     if (_themeIndex == 3) _themeIndex = 2; // Migrate legacy OLED mode
-    _themeColor = Color(
-      _prefs.getInt('themeColor') ?? Colors.blueAccent.toARGB32(),
-    );
-    _hapticsEnabled = _prefs.getBool('hapticsEnabled') ?? true;
     _gridColumns = _prefs.getInt('gridColumns') ?? 3;
     notifyListeners();
   }
@@ -45,18 +39,6 @@ class AppConfigViewModel extends ChangeNotifier {
   Future<void> setThemeIndex(int index) async {
     _themeIndex = index;
     await _prefs.setInt('themeMode', index);
-    notifyListeners();
-  }
-
-  Future<void> setThemeColor(Color color) async {
-    _themeColor = color;
-    await _prefs.setInt('themeColor', color.toARGB32());
-    notifyListeners();
-  }
-
-  Future<void> setHapticsEnabled(bool enabled) async {
-    _hapticsEnabled = enabled;
-    await _prefs.setBool('hapticsEnabled', enabled);
     notifyListeners();
   }
 

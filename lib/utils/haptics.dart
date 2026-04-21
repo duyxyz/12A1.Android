@@ -3,18 +3,22 @@ import '../main.dart';
 
 class AppHaptics {
   static void lightImpact() {
-    if (AppDependencies.instance.configViewModel.hapticsEnabled) HapticFeedback.lightImpact();
+    if (AppDependencies.instance.configViewModel.hapticsEnabled)
+      HapticFeedback.lightImpact();
   }
 
   static void mediumImpact() {
-    if (AppDependencies.instance.configViewModel.hapticsEnabled) HapticFeedback.mediumImpact();
+    if (AppDependencies.instance.configViewModel.hapticsEnabled)
+      HapticFeedback.mediumImpact();
   }
 
   static void heavyImpact() {
-    if (AppDependencies.instance.configViewModel.hapticsEnabled) HapticFeedback.heavyImpact();
+    if (AppDependencies.instance.configViewModel.hapticsEnabled)
+      HapticFeedback.heavyImpact();
   }
 
   static void selectionClick() {
-    if (AppDependencies.instance.configViewModel.hapticsEnabled) HapticFeedback.selectionClick();
+    if (AppDependencies.instance.configViewModel.hapticsEnabled)
+      HapticFeedback.selectionClick();
   }
 }

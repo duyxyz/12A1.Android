@@ -94,18 +94,28 @@ class MyApp extends StatelessWidget {
       listenable: config,
       builder: (context, _) {
         final lightTheme = ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: config.themeColor),
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.grey,
+            primary: Colors.black,
+            onPrimary: Colors.white,
+            primaryContainer: Colors.black,
+            onPrimaryContainer: Colors.white,
+          ),
           useMaterial3: true,
         );
 
         final darkTheme = ThemeData(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: config.themeColor,
+            seedColor: Colors.grey,
             brightness: Brightness.dark,
+            primary: Colors.white,
+            onPrimary: Colors.black,
+            primaryContainer: Colors.white,
+            onPrimaryContainer: Colors.black,
             surface: Colors.black,
             surfaceContainer: Colors.black,
-            surfaceContainerLow: const Color(0xFF0D0D0D),
-            surfaceContainerHigh: const Color(0xFF1A1A1A),
+            surfaceContainerLow: Colors.black,
+            surfaceContainerHigh: Colors.black,
           ),
           scaffoldBackgroundColor: Colors.black,
           appBarTheme: const AppBarTheme(

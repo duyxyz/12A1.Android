@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import '../main.dart';
-import '../tabs/add_tab.dart';
+import '../utils/haptics.dart';
+import '../widgets/expressive_loading_indicator.dart';
 import '../tabs/favorites_tab.dart';
 import '../tabs/home_tab.dart';
 import '../tabs/settings_tab.dart';
@@ -37,6 +40,11 @@ class _MainScreenState extends State<MainScreen>
         setState(() {
           _currentIndex = _tabController.index;
         });
+        _nestedScrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutQuart,
+        );
       }
     });
 
@@ -65,6 +73,85 @@ class _MainScreenState extends State<MainScreen>
 
   void _showUpdateDialog(BuildContext context, dynamic release) {
     UpdateBottomSheet.show(context, release);
+  }
+
+  Future<void> _pickAndUploadImages() async {
+    final ImagePicker picker = ImagePicker();
+    final List<XFile> images = await picker.pickMultiImage();
+    if (images.isEmpty) return;
+
+    if (!mounted) return;
+    ValueNotifier<String> statusNotifier = ValueNotifier('Đang chuẩn bị...');
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ExpressiveLoadingIndicator(isContained: true),
+            const SizedBox(height: 16),
+            ValueListenableBuilder<String>(
+              valueListenable: statusNotifier,
+              builder: (context, status, child) {
+                return Text(
+                  status,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final List<Map<String, dynamic>> processedImages = [];
+      for (int i = 0; i < images.length; i++) {
+        statusNotifier.value = 'Đang xử lý ${i + 1}/${images.length}...';
+        final file = images[i];
+        final bytes = await file.readAsBytes();
+        final compressed = await FlutterImageCompress.compressWithList(
+          bytes,
+          minWidth: 1080,
+          minHeight: 1080,
+          quality: 85,
+          format: CompressFormat.webp,
+        );
+        final imageInfo = await decodeImageFromList(compressed);
+        processedImages.add({
+          'name': 'image.webp',
+          'bytes': compressed,
+          'width': imageInfo.width,
+          'height': imageInfo.height,
+          'path': file.path,
+        });
+        imageInfo.dispose();
+      }
+
+      statusNotifier.value = 'Đang gửi lên server...';
+      final homeVM = AppDependencies.instance.homeViewModel;
+      final bool success = await homeVM.uploadImages(processedImages);
+
+      if (mounted) {
+        Navigator.pop(context); // Close dialog
+        if (success) {
+          AppHaptics.mediumImpact();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Đã tải ảnh lên thành công!')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close dialog
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+      }
+    }
   }
 
   @override
@@ -99,41 +186,6 @@ class _MainScreenState extends State<MainScreen>
             const SettingsTab(isSelected: true),
           ],
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              useSafeArea: true,
-              showDragHandle: true,
-              backgroundColor: Theme.of(
-                context,
-              ).colorScheme.surfaceContainerHigh,
-              builder: (_) => DraggableScrollableSheet(
-                initialChildSize: 0.9,
-                minChildSize: 0.5,
-                maxChildSize: 1.0,
-                expand: false,
-                builder: (_, scrollController) => Scaffold(
-                  backgroundColor: Colors.transparent,
-                  appBar: AppBar(
-                    title: const Text(
-                      'Thêm Ảnh',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    leading: const CloseButton(),
-                    forceMaterialTransparency: true,
-                  ),
-                  body: AddTab(viewModel: homeVM, onStateChanged: () {}),
-                ),
-              ),
-            );
-          },
-          child: const Icon(Icons.add_rounded),
-        ),
         body: SafeArea(
           bottom: false,
           child: NestedScrollView(
@@ -156,6 +208,7 @@ class _MainScreenState extends State<MainScreen>
                       forceElevated: innerBoxIsScrolled,
                       onMenuPressed: () =>
                           _scaffoldKey.currentState?.openDrawer(),
+                      onAddPressed: _pickAndUploadImages,
                       tabBar: TabBar(
                         controller: _tabController,
                         indicatorSize: TabBarIndicatorSize.label,
@@ -165,6 +218,16 @@ class _MainScreenState extends State<MainScreen>
                         ).colorScheme.onSurfaceVariant,
                         indicatorColor: appBarTextColor,
                         dividerColor: Colors.transparent,
+                        onTap: (index) {
+                          if (index == 0 && _currentIndex == 0) {
+                            _nestedScrollController.animateTo(
+                              0,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOutQuart,
+                            );
+                            _homeTabKey.currentState?.scrollToTop();
+                          }
+                        },
                         tabs: const [
                           Tab(text: "Trang chủ"),
                           Tab(text: "Yêu thích"),
@@ -197,6 +260,7 @@ class _MainAppBarDelegate extends SliverPersistentHeaderDelegate {
   final bool forceElevated;
   final Widget tabBar;
   final VoidCallback onMenuPressed;
+  final VoidCallback onAddPressed;
 
   _MainAppBarDelegate({
     required this.paddingTop,
@@ -206,6 +270,7 @@ class _MainAppBarDelegate extends SliverPersistentHeaderDelegate {
     required this.forceElevated,
     required this.tabBar,
     required this.onMenuPressed,
+    required this.onAddPressed,
   });
 
   @override
@@ -270,16 +335,29 @@ class _MainAppBarDelegate extends SliverPersistentHeaderDelegate {
                     ),
                     Padding(
                       padding: const EdgeInsets.only(right: 16),
-                      child: Center(
-                        child: Text(
-                          '${homeVM.images.length} ảnh',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 18,
-                                color: appBarTextColor,
-                              ),
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              Icons.add_rounded,
+                              color: appBarTextColor,
+                            ),
+                            onPressed: onAddPressed,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${homeVM.images.length} ảnh',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 18,
+                                  color: appBarTextColor,
+                                ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
